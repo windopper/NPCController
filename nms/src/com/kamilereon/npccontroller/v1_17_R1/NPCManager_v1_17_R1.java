@@ -1,11 +1,13 @@
 package com.kamilereon.npccontroller.v1_17_R1;
 
 import com.kamilereon.npccontroller.NPCManager;
-import com.kamilereon.npccontroller.npccontroller.NPCControllerMain;
+import com.kamilereon.npccontroller.NPCControllerMain;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.datafixers.util.Pair;
+import net.minecraft.network.NetworkManager;
 import net.minecraft.network.chat.ChatComponentText;
+import net.minecraft.network.protocol.EnumProtocolDirection;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.network.syncher.DataWatcherObject;
 import net.minecraft.network.syncher.DataWatcherRegistry;
@@ -41,10 +43,27 @@ public class NPCManager_v1_17_R1 extends NPCManager {
         GameProfile gameProfile = new GameProfile(UUID.randomUUID(), mainName);
         Property property = new Property("textures", texture, signature);
         gameProfile.getProperties().put("textures", property);
+
         this.npc = new EntityPlayer(nmsServer, nmsWorld, gameProfile);
+
+        this.npc.b = new PlayerConnection(nmsServer, new NetworkManager(EnumProtocolDirection.a), npc);
+        nmsWorld.addEntity(this.npc);
+        this.npc.getBukkitEntity().setCollidable(false);
+        this.npc.getBukkitEntity().setInvulnerable(true);
+
+        this.masterEntity = MasterEntity_v1_17_R1.summon(location);
+
         this.dataWatcher = this.npc.getDataWatcher();
         this.npc.setLocation(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         this.npc.setCustomName(new ChatComponentText(mainName));
+
+
+        Bukkit.getScheduler().runTaskTimer(NPCControllerMain.getPlugin(NPCControllerMain.class), () -> {
+            Location loc = masterEntity.getLocation();
+            this.npc.getBukkitEntity().teleport(loc);
+            PacketPlayOutPlayerInfo packetPlayOutPlayerInfo = new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.e, npc);
+            showns.forEach(player -> getPlayerConnection(player).sendPacket(packetPlayOutPlayerInfo));
+        }, 0, 1);
     }
 
     @Override
@@ -55,17 +74,7 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     }
 
     @Override
-    public void destroy() {
-
-    }
-
-    @Override
     public void moveTo(Location location) {
-
-    }
-
-    @Override
-    public void lookAt(Location location) {
 
     }
 
@@ -84,17 +93,17 @@ public class NPCManager_v1_17_R1 extends NPCManager {
         playerConnection.sendPacket(packetPlayOutPlayerInfo);
         playerConnection.sendPacket(packetPlayOutNamedEntitySpawn);
 
-        CraftScoreboardManager scoreboardManager = ((CraftServer) Bukkit.getServer()).getScoreboardManager();
-        CraftScoreboard mainScoreboard = scoreboardManager.getNewScoreboard();
-        Scoreboard scoreboard = mainScoreboard.getHandle();
-        ScoreboardTeam scoreboardTeam = scoreboard.getPlayerTeam(npc.getName());
-
-        if(scoreboardTeam == null) {
-            scoreboardTeam = scoreboard.createTeam("NPC");
-            scoreboard.addPlayerToTeam(npc.getName(), scoreboardTeam);
-        } else {
-            scoreboard.addPlayerToTeam(npc.getName(), scoreboardTeam);
-        }
+//        CraftScoreboardManager scoreboardManager = ((CraftServer) Bukkit.getServer()).getScoreboardManager();
+//        CraftScoreboard mainScoreboard = scoreboardManager.getNewScoreboard();
+//        Scoreboard scoreboard = mainScoreboard.getHandle();
+//        ScoreboardTeam scoreboardTeam = scoreboard.getPlayerTeam(npc.getName());
+//
+//        if(scoreboardTeam == null) {
+//            scoreboardTeam = scoreboard.createTeam("NPC");
+//            scoreboard.addPlayerToTeam(npc.getName(), scoreboardTeam);
+//        } else {
+//            scoreboard.addPlayerToTeam(npc.getName(), scoreboardTeam);
+//        }
 
         Bukkit.getServer().getScheduler().runTaskLater(NPCControllerMain.getPlugin(NPCControllerMain.class), () -> {
             PacketPlayOutPlayerInfo removeFromTabPacket = new PacketPlayOutPlayerInfo(
@@ -133,7 +142,8 @@ public class NPCManager_v1_17_R1 extends NPCManager {
 
     @Override
     public void sendHeadRotationPacket(Location targetLocation) {
-        Location origin = npc.getBukkitEntity().getLocation();
+
+        Location origin = this.masterEntity.getLocation();
         Vector dirBetween = targetLocation.toVector().subtract(origin.toVector());
         origin.setDirection(dirBetween);
 

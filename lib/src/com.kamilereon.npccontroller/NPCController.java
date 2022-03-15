@@ -1,13 +1,19 @@
 package com.kamilereon.npccontroller;
 
 import com.kamilereon.npccontroller.utils.Logger;
+import net.minecraft.server.network.PlayerConnection;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.NPC;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class NPCController {
 
+    private static final Set<NPCManager> NPC_MANAGERS = new HashSet<>();
     private static final NPCController instance = new NPCController();
     private final Class<?> nmsClass;
     private final Logger logger;
@@ -42,6 +48,7 @@ public class NPCController {
         try {
             NPCManager npcManager = (NPCManager) npcController.nmsClass.getConstructor().newInstance();
             npcManager.create(location);
+            NPC_MANAGERS.add(npcManager);
             return npcManager;
         }
         catch(Exception e) {
@@ -50,5 +57,19 @@ public class NPCController {
         return null;
     }
 
+    public static PlayerConnection getConnection(Player player) {
+        NPCController npcController = getInstance();
+        try {
+            NPCManager npcManager = (NPCManager) npcController.nmsClass.getConstructor().newInstance();
+            return npcManager.getPlayerConnection(player);
+        }
+        catch(Exception e) {
+            npcController.logger.severe("Error while getting connection");
+        }
+        return null;
+    }
+
     public Logger getLogger() { return logger; }
+
+    public static Set<NPCManager> getNpcManagers() { return NPC_MANAGERS; }
 }

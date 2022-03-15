@@ -1,7 +1,8 @@
-package com.kamilereon.npccontroller.npccontroller;
+package com.kamilereon.npccontroller;
 
-import com.kamilereon.npccontroller.NPCController;
-import com.kamilereon.npccontroller.npccontroller.commands.BasicCommands;
+import com.kamilereon.npccontroller.commands.BasicCommands;
+import com.kamilereon.npccontroller.listener.PacketListener;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -12,6 +13,7 @@ public final class NPCControllerMain extends JavaPlugin {
     @Override
     public void onEnable() {
         getLogger().info("NPCController enabled");
+        Bukkit.getPluginManager().registerEvents(new PacketListener(), this);
         NPCController.getInstance();
     }
 
