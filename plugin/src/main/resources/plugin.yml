@@ -1,0 +1,6 @@
+name: NPCController
+version: '${project.version}'
+main: com.kamilereon.npccontroller.npccontroller.NPCControllerMain
+api-version: 1.18
+authors: [ kamilereon ]
+description: control npcs
