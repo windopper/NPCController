@@ -2,6 +2,7 @@ package com.kamilereon.npccontroller;
 
 import com.kamilereon.npccontroller.utils.Logger;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.NPC;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -29,9 +30,25 @@ public class NPCController {
             logger.severe("version "+versionName+" is not supporting");
             return;
         }
+
     }
 
     public static NPCController getInstance() {
         return instance;
     }
+
+    public static NPCManager createNewNPC(Location location) {
+        NPCController npcController = getInstance();
+        try {
+            NPCManager npcManager = (NPCManager) npcController.nmsClass.getConstructor().newInstance();
+            npcManager.create(location);
+            return npcManager;
+        }
+        catch(Exception e) {
+            npcController.logger.severe("Error while creating new npc");
+        }
+        return null;
+    }
+
+    public Logger getLogger() { return logger; }
 }

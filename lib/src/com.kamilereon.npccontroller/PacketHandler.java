@@ -13,7 +13,7 @@ public interface PacketHandler {
 
     void sendEquipmentPacket(Player player);
 
-    void sendAnimationPacket(Player player);
+    void sendAnimationPacket(Player player, int var0);
 
-    void sendHeadRotationPacket(Location location);
+    void sendHeadRotationPacket(Location targetLocation);
 }
