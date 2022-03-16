@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.NPC;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import java.util.Set;
 
 public class NPCController {
 
+    public static final Plugin plugin = NPCControllerMain.getPlugin(NPCControllerMain.class);
     private static final Set<NPCManager> NPC_MANAGERS = new HashSet<>();
     private static final NPCController instance = new NPCController();
     private final Class<?> nmsClass;

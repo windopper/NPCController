@@ -2,6 +2,8 @@ package com.kamilereon.npccontroller.v1_17_R1;
 
 import com.kamilereon.npccontroller.NPCManager;
 import com.kamilereon.npccontroller.NPCControllerMain;
+import com.kamilereon.npccontroller.metadata.MetaDataContainer;
+import com.kamilereon.npccontroller.states.ItemSlot;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.datafixers.util.Pair;
@@ -9,12 +11,14 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.chat.ChatComponentText;
 import net.minecraft.network.protocol.EnumProtocolDirection;
 import net.minecraft.network.protocol.game.*;
+import net.minecraft.network.syncher.DataWatcher;
 import net.minecraft.network.syncher.DataWatcherObject;
 import net.minecraft.network.syncher.DataWatcherRegistry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.EntityPlayer;
 import net.minecraft.server.level.WorldServer;
 import net.minecraft.server.network.PlayerConnection;
+import net.minecraft.world.entity.EntityPose;
 import net.minecraft.world.entity.EnumItemSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.scores.Scoreboard;
@@ -32,6 +36,7 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class NPCManager_v1_17_R1 extends NPCManager {
@@ -51,18 +56,17 @@ public class NPCManager_v1_17_R1 extends NPCManager {
         this.npc.getBukkitEntity().setCollidable(false);
         this.npc.getBukkitEntity().setInvulnerable(true);
 
-        this.masterEntity = MasterEntity_v1_17_R1.summon(location);
-
         this.dataWatcher = this.npc.getDataWatcher();
         this.npc.setLocation(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         this.npc.setCustomName(new ChatComponentText(mainName));
+    }
 
-
-        Bukkit.getScheduler().runTaskTimer(NPCControllerMain.getPlugin(NPCControllerMain.class), () -> {
+    @Override
+    public void setVillagerAI() {
+        this.masterEntity = MasterEntity_v1_17_R1.summon(location);
+        masterEntityTeleportLoop = Bukkit.getScheduler().runTaskTimer(NPCControllerMain.getPlugin(NPCControllerMain.class), () -> {
             Location loc = masterEntity.getLocation();
             this.npc.getBukkitEntity().teleport(loc);
-            PacketPlayOutPlayerInfo packetPlayOutPlayerInfo = new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.e, npc);
-            showns.forEach(player -> getPlayerConnection(player).sendPacket(packetPlayOutPlayerInfo));
         }, 0, 1);
     }
 
@@ -93,18 +97,6 @@ public class NPCManager_v1_17_R1 extends NPCManager {
         playerConnection.sendPacket(packetPlayOutPlayerInfo);
         playerConnection.sendPacket(packetPlayOutNamedEntitySpawn);
 
-//        CraftScoreboardManager scoreboardManager = ((CraftServer) Bukkit.getServer()).getScoreboardManager();
-//        CraftScoreboard mainScoreboard = scoreboardManager.getNewScoreboard();
-//        Scoreboard scoreboard = mainScoreboard.getHandle();
-//        ScoreboardTeam scoreboardTeam = scoreboard.getPlayerTeam(npc.getName());
-//
-//        if(scoreboardTeam == null) {
-//            scoreboardTeam = scoreboard.createTeam("NPC");
-//            scoreboard.addPlayerToTeam(npc.getName(), scoreboardTeam);
-//        } else {
-//            scoreboard.addPlayerToTeam(npc.getName(), scoreboardTeam);
-//        }
-
         Bukkit.getServer().getScheduler().runTaskLater(NPCControllerMain.getPlugin(NPCControllerMain.class), () -> {
             PacketPlayOutPlayerInfo removeFromTabPacket = new PacketPlayOutPlayerInfo(
                     PacketPlayOutPlayerInfo.EnumPlayerInfoAction.e,
@@ -122,6 +114,23 @@ public class NPCManager_v1_17_R1 extends NPCManager {
 
     @Override
     public void sendMetadataPacket(Player player) {
+        byte i = 0x00;
+        for(byte b : metaDataContainer.getStates().values()) {
+            i |= b;
+        }
+        this.dataWatcher.set(DataWatcherRegistry.a.a(0), i);
+        this.dataWatcher.set(DataWatcherRegistry.s.a(6), EntityPose.values()[metaDataContainer.getPose().getVarInt()]);
+        getPlayerConnection(player).sendPacket(new PacketPlayOutEntityMetadata(npc.getId(), dataWatcher, true));
+    }
+
+    @Override
+    public void sendMetadataPacket(Player player, MetaDataContainer metaDataContainer) {
+        byte i = 0x00;
+        for(byte b : metaDataContainer.getStates().values()) {
+            i |= b;
+        }
+        this.dataWatcher.set(DataWatcherRegistry.a.a(0), i);
+        this.dataWatcher.set(DataWatcherRegistry.s.a(6), EntityPose.values()[metaDataContainer.getPose().getVarInt()]);
         getPlayerConnection(player).sendPacket(new PacketPlayOutEntityMetadata(npc.getId(), dataWatcher, true));
     }
 
@@ -129,7 +138,17 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     public void sendEquipmentPacket(Player player) {
         List<Pair<EnumItemSlot, ItemStack>> pairs = new ArrayList<>();
         for(EnumItemSlot enumItemSlot : equips.keySet()) {
-            Pair<EnumItemSlot, ItemStack> pair = new Pair<>(enumItemSlot, CraftItemStack.asNMSCopy(equips.get(enumItemSlot)));
+            Pair<EnumItemSlot, ItemStack> pair = new Pair<>(enumItemSlot, CraftItemStack.asNMSCopy(this.equips.get(enumItemSlot)));
+            pairs.add(pair);
+        }
+        getPlayerConnection(player).sendPacket(new PacketPlayOutEntityEquipment(npc.getId(), pairs));
+    }
+
+    @Override
+    public void sendEquipmentPacket(Player player, Map<ItemSlot, org.bukkit.inventory.ItemStack> itemMap) {
+        List<Pair<EnumItemSlot, ItemStack>> pairs = new ArrayList<>();
+        for(ItemSlot itemSlot : itemMap.keySet()) {
+            Pair<EnumItemSlot, ItemStack> pair = new Pair<>(EnumItemSlot.values()[itemSlot.ordinal()], CraftItemStack.asNMSCopy(itemMap.get(itemSlot)));
             pairs.add(pair);
         }
         getPlayerConnection(player).sendPacket(new PacketPlayOutEntityEquipment(npc.getId(), pairs));
@@ -142,8 +161,7 @@ public class NPCManager_v1_17_R1 extends NPCManager {
 
     @Override
     public void sendHeadRotationPacket(Location targetLocation) {
-
-        Location origin = this.masterEntity.getLocation();
+        Location origin = this.npc.getBukkitEntity().getEyeLocation();
         Vector dirBetween = targetLocation.toVector().subtract(origin.toVector());
         origin.setDirection(dirBetween);
 
