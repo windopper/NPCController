@@ -43,6 +43,7 @@ public class NPCManager_v1_17_R1 extends NPCManager {
 
     @Override
     public void create(Location location) {
+        this.location = location;
         MinecraftServer nmsServer = ((CraftServer) Bukkit.getServer()).getServer();
         WorldServer nmsWorld = ((CraftWorld) location.getWorld()).getHandle();
         GameProfile gameProfile = new GameProfile(UUID.randomUUID(), mainName);

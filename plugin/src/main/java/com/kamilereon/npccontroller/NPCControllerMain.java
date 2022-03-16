@@ -13,7 +13,7 @@ public final class NPCControllerMain extends JavaPlugin {
     @Override
     public void onEnable() {
         getLogger().info("NPCController enabled");
-        Bukkit.getPluginManager().registerEvents(new PacketListener(), this);
+//        Bukkit.getPluginManager().registerEvents(new PacketListener(), this);
         NPCController.getInstance();
     }
 

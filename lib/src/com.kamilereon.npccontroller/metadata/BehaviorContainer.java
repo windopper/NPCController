@@ -17,29 +17,29 @@ public class BehaviorContainer {
     private final NPCManager npcManager;
     private boolean acting = false;
 
-    public enum EnumBehavior {
-        IDLE(new Idle(100, 20)),
-        LOOK_AT_NEAREST_PLAYER(new LookAtNearestPlayer(8, p -> true)),
-        ;
-
-        private Behavior behavior;
-
-        EnumBehavior(Behavior behavior) {
-            this.behavior = behavior;
-        }
-
-        public Behavior getBehavior() {
-            return behavior;
-        }
-    }
+//    public enum EnumBehavior {
+//        IDLE(new Idle(100, 20)),
+//        LOOK_AT_NEAREST_PLAYER(new LookAtNearestPlayer(8, p -> true)),
+//        ;
+//
+//        private Behavior behavior;
+//
+//        EnumBehavior(Behavior behavior) {
+//            this.behavior = behavior;
+//        }
+//
+//        public Behavior getBehavior() {
+//            return behavior;
+//        }
+//    }
 
     public BehaviorContainer(NPCManager npcManager) {
         this.npcManager = npcManager;
     }
 
-    public void setBehavior(int priority, EnumBehavior behavior) {
-        setBehavior(priority, behavior.getBehavior());
-    }
+//    public void setBehavior(int priority, EnumBehavior behavior) {
+//        setBehavior(priority, behavior.getBehavior());
+//    }
 
     public void setBehavior(int priority, Behavior behavior) {
         behaviors.put(behavior, priority);

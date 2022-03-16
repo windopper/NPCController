@@ -16,6 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -24,7 +25,7 @@ import java.util.*;
 public abstract class NPCManager implements PacketHandler, PacketUtil, NPCUtil {
 
     protected EntityPlayer npc;
-    protected LivingEntity masterEntity;
+    protected Villager masterEntity;
     protected Location location;
     protected DataWatcher dataWatcher;
     protected String signature = "";
@@ -51,6 +52,8 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCUtil {
     public abstract void create(Location location);
 
     public abstract void setVillagerAI();
+
+    public Villager getAI() { return masterEntity; }
 
     public boolean hasAI() { return masterEntityTeleportLoop != null; }
 
@@ -133,10 +136,10 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCUtil {
         showns.forEach(this::sendMetadataPacket);
     }
 
-    @Override
-    public void setBehavior(int priority, BehaviorContainer.EnumBehavior behavior) {
-        behaviorContainer.setBehavior(priority, behavior);
-    }
+//    @Override
+//    public void setBehavior(int priority, BehaviorContainer.EnumBehavior behavior) {
+//        behaviorContainer.setBehavior(priority, behavior);
+//    }
 
     @Override
     public void setBehavior(int priority, Behavior behavior) {
