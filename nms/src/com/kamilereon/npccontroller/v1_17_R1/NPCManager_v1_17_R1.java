@@ -1,10 +1,9 @@
 package com.kamilereon.npccontroller.v1_17_R1;
 
+import com.kamilereon.npccontroller.NPCController;
 import com.kamilereon.npccontroller.NPCManager;
 import com.kamilereon.npccontroller.NPCControllerMain;
-import com.kamilereon.npccontroller.metadata.MetaDataContainer;
 import com.kamilereon.npccontroller.states.Animation;
-import com.kamilereon.npccontroller.states.ItemSlot;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.datafixers.util.Pair;
@@ -12,37 +11,27 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.chat.ChatComponentText;
 import net.minecraft.network.protocol.EnumProtocolDirection;
 import net.minecraft.network.protocol.game.*;
-import net.minecraft.network.syncher.DataWatcher;
 import net.minecraft.network.syncher.DataWatcherObject;
 import net.minecraft.network.syncher.DataWatcherRegistry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.EntityPlayer;
 import net.minecraft.server.level.WorldServer;
 import net.minecraft.server.network.PlayerConnection;
-import net.minecraft.world.entity.EntityPose;
-import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.EnumItemSlot;
-import net.minecraft.world.entity.animal.horse.EntityHorse;
-import net.minecraft.world.entity.monster.EntityZombie;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.World;
-import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.scores.ScoreboardTeam;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_17_R1.CraftServer;
 import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_17_R1.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_17_R1.entity.CraftZombie;
 import org.bukkit.craftbukkit.v1_17_R1.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_17_R1.scoreboard.CraftScoreboard;
-import org.bukkit.craftbukkit.v1_17_R1.scoreboard.CraftScoreboardManager;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class NPCManager_v1_17_R1 extends NPCManager {
@@ -62,7 +51,6 @@ public class NPCManager_v1_17_R1 extends NPCManager {
         nmsWorld.addEntity(this.npc);
         this.npc.getBukkitEntity().setCollidable(false);
         this.npc.getBukkitEntity().setInvulnerable(true);
-
         this.dataWatcher = this.npc.getDataWatcher();
         this.npc.setLocation(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
         this.npc.setCustomName(new ChatComponentText(mainName));
@@ -71,18 +59,16 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     @Override
     public void setAI() {
         if(this.masterEntity != null) return;
-        this.masterEntity = MasterEntity2_v1_17_R1.summon(location);
-        masterEntityTeleportLoop = Bukkit.getScheduler().runTaskTimer(NPCControllerMain.getPlugin(NPCControllerMain.class), () -> {
-            Location loc = masterEntity.getBukkitEntity().getLocation();
-            this.npc.getBukkitEntity().teleport(loc);
-        }, 0, 1);
+        this.masterEntity = MasterEntity_v1_17_R1.summon(location);
     }
 
     @Override
     public void updateSkin() {
-        GameProfile newGameProfile = new GameProfile(uuid, mainName);
+        GameProfile newGameProfile = this.npc.getProfile();
         newGameProfile.getProperties().get("textures").clear();
         newGameProfile.getProperties().put("textures", new Property("textures", texture, signature));
+        showns.forEach(this::sendHidePacket);
+        Bukkit.getScheduler().runTaskLater(NPCController.plugin, () -> showns.forEach(this::sendShowPacket), 10);
     }
 
     @Override
@@ -132,35 +118,16 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     }
 
     @Override
-    public void sendMetadataPacket(Player player, MetaDataContainer metaDataContainer) {
-        byte i = 0x00;
-        for(byte b : metaDataContainer.getStates().values()) {
-            i |= b;
-        }
-        this.dataWatcher.set(DataWatcherRegistry.a.a(0), i);
-        this.dataWatcher.set(DataWatcherRegistry.s.a(6), EntityPose.values()[metaDataContainer.getPose().getVarInt()]);
-        getPlayerConnection(player).sendPacket(new PacketPlayOutEntityMetadata(npc.getId(), dataWatcher, true));
-    }
-
-    @Override
     public void sendEquipmentPacket(Player player) {
         List<Pair<EnumItemSlot, ItemStack>> pairs = new ArrayList<>();
         for(EnumItemSlot enumItemSlot : equips.keySet()) {
+            this.npc.getBukkitEntity().getEquipment().setItem(EquipmentSlot.values()[enumItemSlot.ordinal()], equips.get(enumItemSlot));
             Pair<EnumItemSlot, ItemStack> pair = new Pair<>(enumItemSlot, CraftItemStack.asNMSCopy(this.equips.get(enumItemSlot)));
             pairs.add(pair);
         }
-        getPlayerConnection(player).sendPacket(new PacketPlayOutEntityEquipment(npc.getId(), pairs));
+//        getPlayerConnection(player).sendPacket(new PacketPlayOutEntityEquipment(npc.getId(), pairs));
     }
 
-    @Override
-    public void sendEquipmentPacket(Player player, Map<ItemSlot, org.bukkit.inventory.ItemStack> itemMap) {
-        List<Pair<EnumItemSlot, ItemStack>> pairs = new ArrayList<>();
-        for(ItemSlot itemSlot : itemMap.keySet()) {
-            Pair<EnumItemSlot, ItemStack> pair = new Pair<>(EnumItemSlot.values()[itemSlot.ordinal()], CraftItemStack.asNMSCopy(itemMap.get(itemSlot)));
-            pairs.add(pair);
-        }
-        getPlayerConnection(player).sendPacket(new PacketPlayOutEntityEquipment(npc.getId(), pairs));
-    }
 
     @Override
     public void sendAnimationPacket(Player player, int var0) {
@@ -199,9 +166,8 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     }
 
     @Override
-    public void attack(Player player) {
-        this.playAnimation(Animation.SWING_MAIN_ARM);
-        masterEntity.attackEntity(((CraftPlayer) player).getHandle());
+    public void attack(Entity target) {
+
     }
 
     @Override
@@ -212,5 +178,11 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     @Override
     public void unSit() {
 
+    }
+
+    @Override
+    public void attack(org.bukkit.entity.Entity target) {
+        this.playAnimation(Animation.SWING_MAIN_ARM);
+        masterEntity.attackEntity(((CraftEntity) target).getHandle());
     }
 }

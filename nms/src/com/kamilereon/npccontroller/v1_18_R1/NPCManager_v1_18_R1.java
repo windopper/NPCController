@@ -5,6 +5,7 @@ import com.kamilereon.npccontroller.metadata.MetaDataContainer;
 import com.kamilereon.npccontroller.states.ItemSlot;
 import net.minecraft.server.network.PlayerConnection;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -47,17 +48,7 @@ public class NPCManager_v1_18_R1 extends NPCManager {
     }
 
     @Override
-    public void sendMetadataPacket(Player player, MetaDataContainer metaDataContainer) {
-
-    }
-
-    @Override
     public void sendEquipmentPacket(Player player) {
-
-    }
-
-    @Override
-    public void sendEquipmentPacket(Player player, Map<ItemSlot, ItemStack> itemMap) {
 
     }
 
@@ -87,6 +78,11 @@ public class NPCManager_v1_18_R1 extends NPCManager {
     }
 
     @Override
+    public void attack(Entity target) {
+
+    }
+
+    @Override
     public void sit() {
 
     }
@@ -97,7 +93,7 @@ public class NPCManager_v1_18_R1 extends NPCManager {
     }
 
     @Override
-    public void attack(Player player) {
+    public void attack(net.minecraft.world.entity.Entity target) {
 
     }
 }

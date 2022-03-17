@@ -17,11 +17,7 @@ public interface PacketHandler {
 
     void sendMetadataPacket(Player player);
 
-    void sendMetadataPacket(Player player, MetaDataContainer metaDataContainer);
-
     void sendEquipmentPacket(Player player);
-
-    void sendEquipmentPacket(Player player, Map<ItemSlot, ItemStack> itemMap);
 
     void sendAnimationPacket(Player player, int var0);
 

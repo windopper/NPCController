@@ -24,6 +24,7 @@ public class BehaviorContainer {
     }
 
     public void behaviorProcess() {
+
         if(currentBehavior != null) {
             if(currentBehavior.whileCheck(npcManager)) {
                 currentBehavior.act(npcManager);
@@ -32,6 +33,7 @@ public class BehaviorContainer {
                 currentBehavior.endAct(npcManager);
             }
         }
+
         currentBehavior = null;
         for(Behavior behavior : sortedBehaviors.stream().map(Map.Entry::getKey).collect(Collectors.toSet())) {
             if(behavior.check(npcManager)) {

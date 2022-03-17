@@ -36,16 +36,28 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
     protected String mainName = " ";
 
     protected boolean destroyed = false;
+    protected boolean canPickUpItem = false;
     protected BukkitTask masterEntityTeleportLoop = null;
     protected BukkitTask physicsTick = null;
 
     protected Map<EnumItemSlot, ItemStack> equips = new EnumMap<>(EnumItemSlot.class);
+    protected final List<ItemStack> inventory = new ArrayList<>();
+    protected final Map<ItemStack, Double> dropTable = new HashMap<>();
     protected final MetaDataContainer metaDataContainer = new MetaDataContainer();
     protected final BehaviorContainer behaviorContainer = new BehaviorContainer(this);
+
+    protected final Random random = new Random();
 
     public NPCManager() {
         this.physicsTick = Bukkit.getScheduler().runTaskTimer(NPCController.plugin, () -> {
             behaviorContainer.behaviorProcess();
+            if(masterEntity != null) {
+                if(!masterEntity.isAlive()) destroy();
+                else {
+                    Location loc = masterEntity.getBukkitEntity().getLocation();
+                    this.npc.getBukkitEntity().teleport(loc);
+                }
+            }
         }, 0, 1);
     }
 
@@ -55,11 +67,20 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
 
     public EntityZombie getAI() { return masterEntity; }
 
+    public Location getLocation() { return npc.getBukkitEntity().getLocation(); }
+
     public boolean hasAI() { return masterEntityTeleportLoop != null; }
 
     public EntityPlayer getNPC() { return npc; }
 
     public Set<Player> getViewers() { return showns; }
+
+    public void putItem(ItemStack itemStack) {
+        if(isInventoryFull()) return;
+        inventory.add(itemStack);
+    }
+
+    public boolean isInventoryFull() { return inventory.size() > 45; }
 
     public void setMainName(String var) {
         this.mainName = var;
@@ -91,12 +112,20 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
     public abstract void updateSkin();
 
     public void destroy() {
+
+        for(ItemStack item : dropTable.keySet()) {
+            if(random.nextDouble() > dropTable.get(item)) continue;
+            location.getWorld().dropItem(getLocation(), item);
+        }
+
         masterEntity.setRemoved(Entity.RemovalReason.a);
         npc.setRemoved(Entity.RemovalReason.a);
         masterEntity = null;
         destroyed = true;
+
         if(physicsTick != null) physicsTick.cancel();
         Bukkit.getOnlinePlayers().forEach(this::sendHidePacket);
+        NPCController.removeNPCManager(this);
     }
 
     public boolean isDestroyed() { return destroyed; }
@@ -105,7 +134,16 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
 
     public void lookAt(Location targetLocation) {
         masterEntity.getControllerLook().a(targetLocation.getX(), targetLocation.getY(), targetLocation.getZ());
-//        sendHeadRotationPacket(targetLocation);
+    }
+
+    public void setCanPickUpItem(boolean var) { this.canPickUpItem = var; }
+
+    public void addDropTable(ItemStack itemStack, double dropRate) {
+        this.dropTable.put(itemStack, dropRate);
+    }
+
+    public void addDropTable(Map<ItemStack, Double> dropTable) {
+        this.dropTable.putAll(dropTable);
     }
 
     public void setSkin(String signature, String texture) {
@@ -157,9 +195,9 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
         this.masterEntity.getControllerJump().jump();
     }
 
+    public abstract void attack(Entity target);
+
     public abstract void sit();
 
     public abstract void unSit();
-
-    public abstract void attack(Player player);
 }
