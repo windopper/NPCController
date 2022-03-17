@@ -17,7 +17,7 @@ public class NPCManager_v1_18_R1 extends NPCManager {
     }
 
     @Override
-    public void setVillagerAI() {
+    public void setAI() {
 
     }
 
@@ -79,5 +79,25 @@ public class NPCManager_v1_18_R1 extends NPCManager {
     @Override
     public PlayerConnection getPlayerConnection(Player player) {
         return null;
+    }
+
+    @Override
+    public void navigateTo(Location location, double speed) {
+
+    }
+
+    @Override
+    public void sit() {
+
+    }
+
+    @Override
+    public void unSit() {
+
+    }
+
+    @Override
+    public void attack(Player player) {
+
     }
 }

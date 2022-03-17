@@ -2,23 +2,25 @@ package com.kamilereon.npccontroller.commands;
 
 import com.kamilereon.npccontroller.NPCController;
 import com.kamilereon.npccontroller.NPCManager;
-import com.kamilereon.npccontroller.NPCControllerMain;
-import com.kamilereon.npccontroller.behavior.Behavior;
+import com.kamilereon.npccontroller.behavior.Greeting;
 import com.kamilereon.npccontroller.behavior.Idle;
 import com.kamilereon.npccontroller.behavior.LookAtNearestPlayer;
-import com.kamilereon.npccontroller.metadata.BehaviorContainer;
+import com.kamilereon.npccontroller.behavior.RandomLookAround;
 import com.kamilereon.npccontroller.states.Animation;
 import com.kamilereon.npccontroller.states.ItemSlot;
 import com.kamilereon.npccontroller.states.Poses;
 import com.kamilereon.npccontroller.states.States;
-import net.minecraft.world.entity.npc.EntityVillager;
+import net.minecraft.world.entity.ai.control.Control;
+import net.minecraft.world.entity.monster.EntityZombie;
+import net.minecraft.world.level.pathfinder.PathEntity;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_17_R1.entity.CraftVillager;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Villager;
+import org.bukkit.entity.Zombie;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class BasicCommands {
 
@@ -31,9 +33,11 @@ public class BasicCommands {
                     npcManager = NPCController.createNewNPC(player.getLocation());
                     npcManager.showTo(player);
                     npcManager.setEquipment(ItemSlot.CHEST, new ItemStack(Material.DIAMOND_CHESTPLATE));
-                    npcManager.setVillagerAI();
-//                    npcManager.setBehavior(1, new LookAtNearestPlayer(4, (p) -> true));
-//                    npcManager.setBehavior(0, new Idle(40, 20, player.getLocation()));
+                    npcManager.setAI();
+                    npcManager.setBehavior(0, new Greeting(1, (p) -> true));
+                    npcManager.setBehavior(1, new Idle(1, 0.25));
+                    npcManager.setBehavior(2, new RandomLookAround());
+                    npcManager.setBehavior(3, new LookAtNearestPlayer(6, (p) -> true, 0.25));
                 }
                 case "player" -> {
                     player.sendMessage(Bukkit.getOnlinePlayers().size() + " count(s)");
@@ -42,9 +46,44 @@ public class BasicCommands {
                     npcManager.lookAt(player.getEyeLocation());
                 }
                 case "here" -> {
-                    Villager villager = npcManager.getAI();
-                    EntityVillager ev = ((CraftVillager) villager).getHandle();
-                    ev.getNavigation().a(((CraftPlayer) player).getHandle(), 5);
+                    EntityZombie ev = npcManager.getAI();
+                    Location loc = player.getLocation();
+                    ev.getNavigation().a(loc.getX(), loc.getY(), loc.getZ(), 1.8);
+                }
+
+                case "jump" -> {
+                    EntityZombie ev = npcManager.getAI();
+                    Location loc = player.getLocation();
+                    ev.getControllerJump().jump();
+                }
+
+                case "sit" -> {
+                    npcManager.sit();
+                }
+
+                case "unsit" -> {
+                    npcManager.unSit();
+                }
+
+                case "hit" -> {
+                    EntityZombie ev = npcManager.getAI();
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            Location loc = player.getLocation();
+                            PathEntity pathEntity = ev.getNavigation().a(loc.getX(), loc.getY(), loc.getZ(), 4);
+                            ev.getNavigation().a(pathEntity, 1.6);
+                            double dist = ev.getBukkitEntity().getLocation().distance(loc);
+                            if(dist < 10) {
+                                ev.getControllerLook().a(loc.getX(), loc.getY(), loc.getZ());
+                            }
+                            if(dist < 3.5) {
+                                npcManager.playAnimation(Animation.SWING_MAIN_ARM);
+                                ev.attackEntity(((CraftPlayer) player).getHandle());
+                                cancel();
+                            }
+                        }
+                    }.runTaskTimer(NPCController.plugin, 0, 1);
                 }
             }
         }

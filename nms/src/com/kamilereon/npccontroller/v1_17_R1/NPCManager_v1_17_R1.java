@@ -3,6 +3,7 @@ package com.kamilereon.npccontroller.v1_17_R1;
 import com.kamilereon.npccontroller.NPCManager;
 import com.kamilereon.npccontroller.NPCControllerMain;
 import com.kamilereon.npccontroller.metadata.MetaDataContainer;
+import com.kamilereon.npccontroller.states.Animation;
 import com.kamilereon.npccontroller.states.ItemSlot;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
@@ -19,8 +20,12 @@ import net.minecraft.server.level.EntityPlayer;
 import net.minecraft.server.level.WorldServer;
 import net.minecraft.server.network.PlayerConnection;
 import net.minecraft.world.entity.EntityPose;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EnumItemSlot;
+import net.minecraft.world.entity.animal.horse.EntityHorse;
+import net.minecraft.world.entity.monster.EntityZombie;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.World;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.scores.ScoreboardTeam;
 import org.bukkit.Bukkit;
@@ -28,6 +33,7 @@ import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_17_R1.CraftServer;
 import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_17_R1.entity.CraftZombie;
 import org.bukkit.craftbukkit.v1_17_R1.inventory.CraftItemStack;
 import org.bukkit.craftbukkit.v1_17_R1.scoreboard.CraftScoreboard;
 import org.bukkit.craftbukkit.v1_17_R1.scoreboard.CraftScoreboardManager;
@@ -63,10 +69,11 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     }
 
     @Override
-    public void setVillagerAI() {
-        this.masterEntity = MasterEntity_v1_17_R1.summon(location);
+    public void setAI() {
+        if(this.masterEntity != null) return;
+        this.masterEntity = MasterEntity2_v1_17_R1.summon(location);
         masterEntityTeleportLoop = Bukkit.getScheduler().runTaskTimer(NPCControllerMain.getPlugin(NPCControllerMain.class), () -> {
-            Location loc = masterEntity.getLocation();
+            Location loc = masterEntity.getBukkitEntity().getLocation();
             this.npc.getBukkitEntity().teleport(loc);
         }, 0, 1);
     }
@@ -189,5 +196,21 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     @Override
     public PlayerConnection getPlayerConnection(Player player) {
         return ((CraftPlayer) player).getHandle().b;
+    }
+
+    @Override
+    public void attack(Player player) {
+        this.playAnimation(Animation.SWING_MAIN_ARM);
+        masterEntity.attackEntity(((CraftPlayer) player).getHandle());
+    }
+
+    @Override
+    public void sit() {
+
+    }
+
+    @Override
+    public void unSit() {
+
     }
 }

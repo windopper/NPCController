@@ -8,24 +8,24 @@ import com.kamilereon.npccontroller.states.ItemSlot;
 import com.kamilereon.npccontroller.states.Poses;
 import com.kamilereon.npccontroller.states.States;
 import net.minecraft.network.syncher.DataWatcher;
-import net.minecraft.network.syncher.DataWatcherRegistry;
 import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.world.entity.EntityPose;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EnumItemSlot;
+import net.minecraft.world.entity.animal.horse.EntityHorse;
+import net.minecraft.world.entity.monster.EntityZombie;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 
-public abstract class NPCManager implements PacketHandler, PacketUtil, NPCUtil {
+public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil {
 
     protected EntityPlayer npc;
-    protected Villager masterEntity;
+    protected EntityZombie masterEntity;
+    protected EntityHorse chair;
     protected Location location;
     protected DataWatcher dataWatcher;
     protected String signature = "";
@@ -45,15 +45,15 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCUtil {
 
     public NPCManager() {
         this.physicsTick = Bukkit.getScheduler().runTaskTimer(NPCController.plugin, () -> {
-            behaviorContainer.judgeNextAction();
+            behaviorContainer.behaviorProcess();
         }, 0, 1);
     }
 
     public abstract void create(Location location);
 
-    public abstract void setVillagerAI();
+    public abstract void setAI();
 
-    public Villager getAI() { return masterEntity; }
+    public EntityZombie getAI() { return masterEntity; }
 
     public boolean hasAI() { return masterEntityTeleportLoop != null; }
 
@@ -91,7 +91,8 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCUtil {
     public abstract void updateSkin();
 
     public void destroy() {
-        masterEntity.remove();
+        masterEntity.setRemoved(Entity.RemovalReason.a);
+        npc.setRemoved(Entity.RemovalReason.a);
         masterEntity = null;
         destroyed = true;
         if(physicsTick != null) physicsTick.cancel();
@@ -103,7 +104,8 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCUtil {
     public abstract void moveTo(Location location);
 
     public void lookAt(Location targetLocation) {
-        sendHeadRotationPacket(targetLocation);
+        masterEntity.getControllerLook().a(targetLocation.getX(), targetLocation.getY(), targetLocation.getZ());
+//        sendHeadRotationPacket(targetLocation);
     }
 
     public void setSkin(String signature, String texture) {
@@ -136,15 +138,28 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCUtil {
         showns.forEach(this::sendMetadataPacket);
     }
 
-//    @Override
-//    public void setBehavior(int priority, BehaviorContainer.EnumBehavior behavior) {
-//        behaviorContainer.setBehavior(priority, behavior);
-//    }
-
     @Override
     public void setBehavior(int priority, Behavior behavior) {
         behaviorContainer.setBehavior(priority, behavior);
     }
 
     public BehaviorContainer getBehaviorContainer() { return behaviorContainer; }
+
+    @Override
+    public void navigateTo(Location location, double speed) {
+        if(this.masterEntity == null) return;
+        EntityZombie ev = this.masterEntity;
+        ev.getNavigation().a(location.getX(), location.getY(), location.getZ(), speed);
+    }
+
+    @Override
+    public void jump() {
+        this.masterEntity.getControllerJump().jump();
+    }
+
+    public abstract void sit();
+
+    public abstract void unSit();
+
+    public abstract void attack(Player player);
 }

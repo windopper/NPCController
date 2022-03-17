@@ -10,6 +10,7 @@ import net.minecraft.world.entity.ai.BehaviorController;
 import net.minecraft.world.entity.ai.goal.PathfinderGoalFollowEntity;
 import net.minecraft.world.entity.ai.goal.PathfinderGoalLookAtPlayer;
 import net.minecraft.world.entity.ai.goal.PathfinderGoalSelector;
+import net.minecraft.world.entity.monster.EntitySkeleton;
 import net.minecraft.world.entity.npc.EntityVillager;
 import net.minecraft.world.entity.schedule.Activity;
 import net.minecraft.world.level.World;
@@ -29,9 +30,6 @@ public class MasterEntity_v1_17_R1 extends EntityVillager {
         World nmsWorld = ((CraftWorld) location.getWorld()).getHandle();
         MasterEntity_v1_17_R1 entityVillager = new MasterEntity_v1_17_R1(nmsWorld);
         entityVillager.setLocation(location.getX(), location.getY(), location.getZ(), location.getYaw(), location.getPitch());
-
-        entityVillager.removeAI();
-        entityVillager.bP.a(0, new PathfinderGoalLookAtPlayer(entityVillager, EntityPlayer.class, 5, 100));
 
         Villager villager = (Villager) entityVillager.getBukkitEntity();
         nmsWorld.addEntity(entityVillager);
