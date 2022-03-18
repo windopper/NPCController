@@ -74,6 +74,20 @@ public class NPCController {
         return null;
     }
 
+    public static NPCManager createNewNPC(Location location, String name, String signature, String texture) {
+        NPCController npcController = getInstance();
+        try {
+            NPCManager npcManager = (NPCManager) npcController.nmsClass.getConstructor().newInstance();
+            npcManager.create(location, name, signature, texture);
+            NPC_MANAGERS.add(npcManager);
+            return npcManager;
+        }
+        catch(Exception e) {
+            npcController.logger.severe("Error while creating new npc");
+        }
+        return null;
+    }
+
     public static void removeNPCManager(NPCManager npcManager) {
         NPC_MANAGERS.remove(npcManager);
     }

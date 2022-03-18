@@ -2,13 +2,19 @@ package com.kamilereon.npccontroller.behavior;
 
 import com.kamilereon.npccontroller.NPCManager;
 import com.kamilereon.npccontroller.utils.NumberUtils;
+import net.minecraft.core.BlockPosition;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EnumMoveType;
 import net.minecraft.world.entity.ai.goal.PathfinderGoalFloat;
+import net.minecraft.world.entity.ai.navigation.NavigationAbstract;
 import net.minecraft.world.entity.ai.util.DefaultRandomPos;
 import net.minecraft.world.entity.monster.EntityZombie;
+import net.minecraft.world.level.pathfinder.PathEntity;
+import net.minecraft.world.level.pathfinder.PathPoint;
 import net.minecraft.world.phys.Vec3D;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 
 public class Idle extends Behavior {
 
@@ -44,7 +50,8 @@ public class Idle extends Behavior {
 
     @Override
     public void firstAct(NPCManager npcManager) {
-        npcManager.getAI().getNavigation().a(this.x, this.y, this.z, this.speed);
+        NavigationAbstract n = npcManager.getAI().getNavigation();
+        n.a(this.x, this.y, this.z, this.speed);
     }
 
     @Override

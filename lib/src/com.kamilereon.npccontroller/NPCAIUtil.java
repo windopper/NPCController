@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 
 public interface NPCAIUtil {
     void setBehavior(int priority, Behavior behavior);
-    void navigateTo(Location location, double speed);
+    boolean navigateTo(Location location, double speed, int nearbyDist);
     void jump();
     void attack(Entity target);
 }

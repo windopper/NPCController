@@ -1,73 +1,183 @@
 package com.kamilereon.npccontroller;
 
 import com.kamilereon.npccontroller.behavior.Behavior;
+import com.kamilereon.npccontroller.memory.MemoryModule;
 import com.kamilereon.npccontroller.metadata.BehaviorContainer;
 import com.kamilereon.npccontroller.metadata.MetaDataContainer;
 import com.kamilereon.npccontroller.states.Animation;
 import com.kamilereon.npccontroller.states.ItemSlot;
 import com.kamilereon.npccontroller.states.Poses;
 import com.kamilereon.npccontroller.states.States;
+import com.kamilereon.npccontroller.utils.NameTagUtils;
 import net.minecraft.network.syncher.DataWatcher;
 import net.minecraft.server.level.EntityPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EnumItemSlot;
 import net.minecraft.world.entity.animal.horse.EntityHorse;
+import net.minecraft.world.entity.decoration.EntityArmorStand;
 import net.minecraft.world.entity.monster.EntityZombie;
+import net.minecraft.world.level.pathfinder.PathEntity;
+import net.minecraft.world.phys.Vec3D;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.memory.MemoryKey;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 
 import java.util.*;
 
 public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil {
 
     protected EntityPlayer npc;
-    protected EntityZombie masterEntity;
+    protected AIEntity masterEntity;
     protected EntityHorse chair;
     protected Location location;
     protected DataWatcher dataWatcher;
     protected String signature = "";
     protected String texture = "";
     protected final UUID uuid = UUID.randomUUID();
-    protected final Set<Player> showns = new HashSet<>();
-    protected final List<String> listedNameLine = new ArrayList<>();
+    protected final Set<Player> showns = Collections.synchronizedSet(new HashSet<>()); // npc 를 볼 수 있는 권한이 있는 사람들
+    protected final Set<Player> farShowns = Collections.synchronizedSet(new HashSet<>()); // 이 npc 를 볼 권한은 있지만 너무 멀어서 볼 수 없음
+    protected final HashMap<String, ArmorStand> listedNameLine = new HashMap<>(); // 이름
     protected String mainName = " ";
 
-    protected boolean destroyed = false;
-    protected boolean canPickUpItem = false;
+    protected boolean destroyed = false; // npc 가 파괴되었는지?
+    protected boolean canPickUpItem = false; // 아이템을 주울 수 있는지
     protected BukkitTask masterEntityTeleportLoop = null;
-    protected BukkitTask physicsTick = null;
+    protected int physicsTick; // 1틱에 한번 루프 ( 생성자 초기화 )
+    protected int LazyphysicsTick; // 10틱에 한번 루프 ( 생성자 초기화 )
 
-    protected Map<EnumItemSlot, ItemStack> equips = new EnumMap<>(EnumItemSlot.class);
-    protected final List<ItemStack> inventory = new ArrayList<>();
-    protected final Map<ItemStack, Double> dropTable = new HashMap<>();
-    protected final MetaDataContainer metaDataContainer = new MetaDataContainer();
-    protected final BehaviorContainer behaviorContainer = new BehaviorContainer(this);
+    protected Map<EnumItemSlot, ItemStack> equips = new EnumMap<>(EnumItemSlot.class); // 장비
+    protected final List<ItemStack> inventory = new ArrayList<>(); // 인벤토리
+    protected final Map<ItemStack, Double> dropTable = new HashMap<>(); // 드랍테이블 & 확률
+    protected final MetaDataContainer metaDataContainer = new MetaDataContainer(); // 메타데이터 패킷
+    protected final BehaviorContainer behaviorContainer = new BehaviorContainer(this); // npc 인공지능
+    protected final Set<MemoryModule<?>> memories = new HashSet<>();
 
     protected final Random random = new Random();
 
+    protected int despawnRadius = 100;
+
     public NPCManager() {
-        this.physicsTick = Bukkit.getScheduler().runTaskTimer(NPCController.plugin, () -> {
-            behaviorContainer.behaviorProcess();
-            if(masterEntity != null) {
-                if(!masterEntity.isAlive()) destroy();
-                else {
-                    Location loc = masterEntity.getBukkitEntity().getLocation();
-                    this.npc.getBukkitEntity().teleport(loc);
+        this.physicsTick = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if(isDestroyed()) {
+                    cancel();
+                }
+                if(showns.size() == 0 && !isDestroyed()) {
+                    destroy();
+                    cancel();
+                }
+                behaviorContainer.behaviorProcess();
+                if(masterEntity != null) {
+                    if (masterEntity.getBukkitEntity().isDead()) {
+                        destroy();
+                        cancel();
+                    }
+                    else {
+                        // Teleport Loop
+                        Location loc = masterEntity.getBukkitEntity().getLocation();
+                        getNPC().getBukkitEntity().teleport(loc);
+
+                        // Name Tag Loop
+                        double c = 0;
+                        double height = masterEntity.getBukkitEntity().getHeight();
+                        Location eloc = getNPC().getBukkitEntity().getLocation();
+                        for (ArmorStand e : listedNameLine.values()) {
+                            Location cloc = eloc.clone();
+                            cloc.setY(npc.getBukkitEntity().getEyeHeight() + c);
+                            e.teleport(getNPC().getBukkitEntity().getLocation().add(0, c + height, 0));
+                            c += 0.25;
+                        }
+
+                        // FarPlayer Loop
+                        Iterator<Player> it = farShowns.iterator();
+                        while(it.hasNext()) {
+                            Player p = it.next();
+                            if(loc.distance(p.getLocation()) < 35) {
+                                sendShowPacket(p);
+                                it.remove();
+                            }
+                        }
+                    }
                 }
             }
-        }, 0, 1);
+        }.runTaskTimer(NPCController.plugin, 0, 1).getTaskId();
+
+        this.LazyphysicsTick = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if(isDestroyed()) {
+                    cancel();
+                    return;
+                }
+                boolean inRadius = false;
+                Location loc = getLocation();
+                for (Player shown : showns) {
+                    Location ploc = shown.getLocation();
+                    try {
+                        if(loc.distance(ploc) < despawnRadius) inRadius = true;
+                        break;
+                    }
+                    catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                if(!inRadius) {
+                    destroy();
+                    cancel();
+                }
+            }
+        }.runTaskTimer(NPCController.plugin, 0, 10).getTaskId();
     }
 
     public abstract void create(Location location);
 
+    public void create(Location location, String name) {
+        this.mainName = name;
+        create(location);
+    }
+
+    public void create(Location location, String name, String signature, String texture) {
+        this.mainName = name;
+        this.texture = texture;
+        this.signature = signature;
+        create(location);
+    }
+
     public abstract void setAI();
 
-    public EntityZombie getAI() { return masterEntity; }
+    public AIEntity getAI() { return masterEntity; }
+
+    public void setDespawnRadius(int despawnRadius) { this.despawnRadius = despawnRadius; }
 
     public Location getLocation() { return npc.getBukkitEntity().getLocation(); }
+
+    public MemoryModule<?> getMemoryModuleIfPresent(String key) {
+        for(MemoryModule<?> memoryKey : memories) {
+            if(memoryKey.getMemoryKey().equals(key)) {
+                return memoryKey;
+            }
+        }
+        return null;
+    }
+
+    public void putMemoryModule(MemoryModule<?> memoryModule) {
+        memories.add(memoryModule);
+    }
+
+    public void removeMemoryModule(String key) {
+        memories.removeIf(memoryModule -> memoryModule.getMemoryKey().equals(key));
+    }
+
+    public Random getRandom() { return random; }
 
     public boolean hasAI() { return masterEntityTeleportLoop != null; }
 
@@ -87,16 +197,22 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
     }
 
     public void setNameLine(String ...var) {
-        listedNameLine.addAll(Arrays.stream(var).toList());
+        double i = 0;
+        double h = this.npc.getBukkitEntity().getHeight();
+        for(String name : var) {
+            ArmorStand armorStand = NameTagUtils.getNameTag(this.npc.getBukkitEntity().getLocation().add(0, h+i, 0));
+            armorStand.setCustomName(name);
+            listedNameLine.put(name, armorStand);
+            i+=0.25;
+        }
     }
 
-    public void modifyName(int loc, String var) {
-        try {
-            listedNameLine.set(loc, var);
-        }
-        catch(IndexOutOfBoundsException e) {
-            NPCController.getInstance().getLogger().severe("Name which you want to modify is out of range");
-        }
+    public void addFarShowns(Player player) {
+        farShowns.add(player);
+    }
+
+    public void removeFarShowns(Player player) {
+        farShowns.remove(player);
     }
 
     public void showTo(Player player) {
@@ -112,18 +228,21 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
     public abstract void updateSkin();
 
     public void destroy() {
+        if(destroyed) return;
+
+        destroyed = true;
 
         for(ItemStack item : dropTable.keySet()) {
             if(random.nextDouble() > dropTable.get(item)) continue;
             location.getWorld().dropItem(getLocation(), item);
         }
 
-        masterEntity.setRemoved(Entity.RemovalReason.a);
-        npc.setRemoved(Entity.RemovalReason.a);
-        masterEntity = null;
-        destroyed = true;
+        for(ArmorStand a : listedNameLine.values()) {
+            a.remove();
+        }
+        if(masterEntity != null) masterEntity.setRemoved(Entity.RemovalReason.a);
+        if(npc != null) npc.setRemoved(Entity.RemovalReason.a);
 
-        if(physicsTick != null) physicsTick.cancel();
         Bukkit.getOnlinePlayers().forEach(this::sendHidePacket);
         NPCController.removeNPCManager(this);
     }
@@ -181,13 +300,30 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
         behaviorContainer.setBehavior(priority, behavior);
     }
 
+    public void playSound(Location location, Sound sound, float volume, float pitch) {
+        for(Player player : showns) {
+            if(player.getWorld().equals(location.getWorld())) {
+                player.getWorld().playSound(location, sound, volume, pitch);
+            }
+        }
+    }
+
+    public <T> void spawnParticle(Particle particle, Location location, int amount, double x, double y, double z, double speed, T t) {
+        for(Player player : showns) {
+            if(player.getWorld().equals(location.getWorld())) {
+                player.getWorld().spawnParticle(particle, location, amount, x, y, z, t);
+            }
+        }
+    }
+
     public BehaviorContainer getBehaviorContainer() { return behaviorContainer; }
 
     @Override
-    public void navigateTo(Location location, double speed) {
-        if(this.masterEntity == null) return;
-        EntityZombie ev = this.masterEntity;
-        ev.getNavigation().a(location.getX(), location.getY(), location.getZ(), speed);
+    public boolean navigateTo(Location location, double speed, int nearbyDist) {
+        if(this.masterEntity == null) return false;
+        AIEntity ev = this.masterEntity;
+        PathEntity pe = ev.getNavigation().a(location.getX(), location.getY(), location.getZ(), nearbyDist);
+        return !ev.getNavigation().a(pe, speed);
     }
 
     @Override
@@ -195,9 +331,13 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
         this.masterEntity.getControllerJump().jump();
     }
 
-    public abstract void attack(Entity target);
-
-    public abstract void sit();
-
-    public abstract void unSit();
+    public void leap(double power) {
+        Vec3D var0 = this.getAI().getMot();
+        Vector v = this.getAI().getBukkitEntity().getLocation().getDirection();
+        Vec3D var1 = new Vec3D(v.getX(), 0.0D, v.getZ());
+        if(var1.g() > 1.0E-7D) {
+            var1 = var1.d().a(power).e(var0.a(0.2D));
+        }
+        this.getAI().setMot(var1.b, 0.4D, var1.d);
+    }
 }

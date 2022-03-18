@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 public class BehaviorContainer {
 
     private final Map<Behavior, Integer> behaviors = new HashMap<>();
-    private List<Map.Entry<Behavior, Integer>> sortedBehaviors = new ArrayList<>();
+    private List<Map.Entry<Behavior, Integer>> sortedBehaviors = Collections.synchronizedList(new ArrayList<>());
     private final NPCManager npcManager;
     private Behavior currentBehavior;
 
@@ -20,6 +20,16 @@ public class BehaviorContainer {
 
     public void setBehavior(int priority, Behavior behavior) {
         behaviors.put(behavior, priority);
+        sortBehavior();
+    }
+
+    public void removeBehavior(Class<? extends Behavior> behavior) {
+        for(Behavior b : behaviors.keySet()) {
+            if(b.getClass() == behavior) {
+                behaviors.remove(b);
+                break;
+            }
+        }
         sortBehavior();
     }
 

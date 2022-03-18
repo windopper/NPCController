@@ -19,6 +19,9 @@ import net.minecraft.server.level.WorldServer;
 import net.minecraft.server.network.PlayerConnection;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.ScoreboardTeam;
+import net.minecraft.world.scores.ScoreboardTeamBase;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.craftbukkit.v1_17_R1.CraftServer;
@@ -26,6 +29,7 @@ import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
 import org.bukkit.craftbukkit.v1_17_R1.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_17_R1.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_17_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_17_R1.scoreboard.CraftScoreboard;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.Vector;
@@ -46,9 +50,10 @@ public class NPCManager_v1_17_R1 extends NPCManager {
         gameProfile.getProperties().put("textures", property);
 
         this.npc = new EntityPlayer(nmsServer, nmsWorld, gameProfile);
-
         this.npc.b = new PlayerConnection(nmsServer, new NetworkManager(EnumProtocolDirection.a), npc);
+
         nmsWorld.addEntity(this.npc);
+
         this.npc.getBukkitEntity().setCollidable(false);
         this.npc.getBukkitEntity().setInvulnerable(true);
         this.dataWatcher = this.npc.getDataWatcher();
@@ -88,8 +93,20 @@ public class NPCManager_v1_17_R1 extends NPCManager {
                 npc
         );
 
+//        Scoreboard scoreboard = ((CraftScoreboard) Bukkit.getScoreboardManager().getMainScoreboard()).getHandle();
+//        ScoreboardTeam scoreboardTeam = scoreboard.getTeam("NPC");
+//        if(scoreboardTeam == null) {
+//            scoreboardTeam =  scoreboard.createTeam("NPC");
+//        }
+//        scoreboardTeam.setNameTagVisibility(ScoreboardTeamBase.EnumNameTagVisibility.d);
+//        PacketPlayOutScoreboardTeam packetPlayOutScoreboardTeam = PacketPlayOutScoreboardTeam.a(scoreboardTeam, true);
+//        PacketPlayOutScoreboardTeam team2 = PacketPlayOutScoreboardTeam.a(scoreboardTeam, this.npc.getName(), PacketPlayOutScoreboardTeam.a.a);
+
+
         playerConnection.sendPacket(packetPlayOutPlayerInfo);
         playerConnection.sendPacket(packetPlayOutNamedEntitySpawn);
+//        playerConnection.sendPacket(packetPlayOutScoreboardTeam);
+//        playerConnection.sendPacket(team2);
 
         Bukkit.getServer().getScheduler().runTaskLater(NPCControllerMain.getPlugin(NPCControllerMain.class), () -> {
             PacketPlayOutPlayerInfo removeFromTabPacket = new PacketPlayOutPlayerInfo(
@@ -121,11 +138,11 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     public void sendEquipmentPacket(Player player) {
         List<Pair<EnumItemSlot, ItemStack>> pairs = new ArrayList<>();
         for(EnumItemSlot enumItemSlot : equips.keySet()) {
-            this.npc.getBukkitEntity().getEquipment().setItem(EquipmentSlot.values()[enumItemSlot.ordinal()], equips.get(enumItemSlot));
+//            this.npc.getBukkitEntity().getEquipment().setItem(EquipmentSlot.values()[enumItemSlot.ordinal()], equips.get(enumItemSlot));
             Pair<EnumItemSlot, ItemStack> pair = new Pair<>(enumItemSlot, CraftItemStack.asNMSCopy(this.equips.get(enumItemSlot)));
             pairs.add(pair);
         }
-//        getPlayerConnection(player).sendPacket(new PacketPlayOutEntityEquipment(npc.getId(), pairs));
+        getPlayerConnection(player).sendPacket(new PacketPlayOutEntityEquipment(npc.getId(), pairs));
     }
 
 
@@ -163,21 +180,6 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     @Override
     public PlayerConnection getPlayerConnection(Player player) {
         return ((CraftPlayer) player).getHandle().b;
-    }
-
-    @Override
-    public void attack(Entity target) {
-
-    }
-
-    @Override
-    public void sit() {
-
-    }
-
-    @Override
-    public void unSit() {
-
     }
 
     @Override

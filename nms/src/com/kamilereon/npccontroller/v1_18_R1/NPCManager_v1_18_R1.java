@@ -73,27 +73,7 @@ public class NPCManager_v1_18_R1 extends NPCManager {
     }
 
     @Override
-    public void navigateTo(Location location, double speed) {
-
-    }
-
-    @Override
     public void attack(Entity target) {
-
-    }
-
-    @Override
-    public void sit() {
-
-    }
-
-    @Override
-    public void unSit() {
-
-    }
-
-    @Override
-    public void attack(net.minecraft.world.entity.Entity target) {
 
     }
 }

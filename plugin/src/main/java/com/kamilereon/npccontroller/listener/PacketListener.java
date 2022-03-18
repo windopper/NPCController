@@ -57,22 +57,22 @@ public class PacketListener implements Listener {
                         int entityId = npcManager.getNPC().getId();
                         for(int id : intList) {
                             if(id == entityId && !npcManager.isDestroyed()) {
-                                npcManager.sendShowPacket(player);
+                                Bukkit.broadcastMessage("destroyed!");
+                                npcManager.addFarShowns(player);
                             }
                         }
                     }
                 }
-                if(packet instanceof PacketPlayOutChat) return;
-                if(packet instanceof PacketPlayOutAbilities) return;
-                if(packet instanceof PacketPlayOutUpdateAttributes) return;
-                if(packet instanceof PacketPlayInFlying) return;
-                if(packet instanceof PacketPlayOutLightUpdate) return;
-                if(packet instanceof PacketPlayOutMapChunk) return;
-
-                if(!pre.equals(packet.getClass().getName())) {
-                    pre = packet.getClass().getName();
-//                    Bukkit.broadcastMessage(packet.getClass().getName());
-                }
+//                if(packet instanceof PacketPlayOutChat) return;
+//                if(packet instanceof PacketPlayOutAbilities) return;
+//                if(packet instanceof PacketPlayOutUpdateAttributes) return;
+//                if(packet instanceof PacketPlayInFlying) return;
+//                if(packet instanceof PacketPlayOutLightUpdate) return;
+//                if(packet instanceof PacketPlayOutMapChunk) return;
+//
+//                if(!pre.equals(packet.getClass().getName())) {
+//                    pre = packet.getClass().getName();
+//                }
             }
         };
 
