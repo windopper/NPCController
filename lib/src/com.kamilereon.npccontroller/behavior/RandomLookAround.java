@@ -6,9 +6,14 @@ import net.minecraft.world.entity.Entity;
 
 public class RandomLookAround extends Behavior{
 
+
     private int tick;
     private double x;
     private double z;
+
+    public RandomLookAround() {
+        this.canForceStop = true;
+    }
 
     @Override
     public boolean check(NPCManager npcManager) {

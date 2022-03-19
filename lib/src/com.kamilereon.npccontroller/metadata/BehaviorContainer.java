@@ -35,7 +35,23 @@ public class BehaviorContainer {
 
     public void behaviorProcess() {
 
+
         if(currentBehavior != null) {
+
+            // If currentBehavior can forceStop
+            if(currentBehavior.isCanForceStop()) {
+                for(Behavior behavior : sortedBehaviors.stream().map(Map.Entry::getKey).toList()) {
+                    // check forceStart if possible
+                    if(!behavior.isCanForceStart()) continue;
+                    if(behavior.check(npcManager)) {
+                        currentBehavior.endAct(npcManager);
+                        currentBehavior = behavior;
+                        behavior.firstAct(npcManager);
+                        return;
+                    }
+                }
+            }
+
             if(currentBehavior.whileCheck(npcManager)) {
                 currentBehavior.act(npcManager);
                 return;
@@ -54,10 +70,14 @@ public class BehaviorContainer {
         }
     }
 
+    public void forceStopBehavior() {
+        currentBehavior.endAct(npcManager);
+        this.currentBehavior = null;
+    }
+
     private void sortBehavior() {
         sortedBehaviors = new ArrayList<>(behaviors.entrySet());
         sortedBehaviors.sort(Map.Entry.comparingByValue(Integer::compareTo));
-
     }
 
     public Map<Behavior, Integer> getBehaviorMap() { return this.behaviors; }

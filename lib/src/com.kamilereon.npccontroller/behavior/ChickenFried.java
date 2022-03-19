@@ -13,16 +13,19 @@ import org.bukkit.inventory.ItemStack;
 public class ChickenFried extends Behavior{
 
     protected int radius;
+    protected double rate;
     protected Location targetLoc;
     protected Campfire targetCampFire;
     protected int tick;
 
-    public ChickenFried(int radius) {
+    public ChickenFried(int radius, double rate) {
         this.radius = radius;
+        this.rate = rate;
     }
 
     @Override
     public boolean check(NPCManager npcManager) {
+        if(npcManager.getRandom().nextDouble() > rate) return false;
         Location loc = npcManager.getLocation();
         for(double x = loc.getX() - radius; x <= loc.getX() + radius; x++) {
             for(double y = loc.getY() - radius; y <= loc.getY() + radius; y++) {
@@ -69,13 +72,14 @@ public class ChickenFried extends Behavior{
     @Override
     public void act(NPCManager npcManager) {
         Location loc = npcManager.getLocation();
-        if(targetLoc.distance(loc) < 2) {
+        if(targetLoc.distance(loc) <= 3) {
             npcManager.lookAt(targetLoc);
             if(this.tick == 1) {
                 for(int i=0; i<4; i++) {
                     if(targetCampFire.getItem(i) == null) {
+                        targetCampFire.setCookTime(i, 0);
+                        targetCampFire.setCookTimeTotal(i, 100);
                         targetCampFire.setItem(i, new ItemStack(Material.CHICKEN, 1));
-                        targetCampFire.setCookTime(i, 100);
                         targetCampFire.update();
                         npcManager.playAnimation(Animation.SWING_MAIN_ARM);
                         npcManager.playSound(targetLoc, Sound.BLOCK_FIRE_EXTINGUISH, 1, 1);
@@ -86,7 +90,7 @@ public class ChickenFried extends Behavior{
             }
             --this.tick;
         } else {
-            npcManager.navigateTo(targetLoc, 1, 2);
+            npcManager.navigateTo(targetLoc, 1, 1);
         }
     }
 }

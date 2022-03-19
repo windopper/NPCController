@@ -10,7 +10,7 @@ public class RunIdle extends Idle{
     @Override
     public void act(NPCManager npcManager) {
         if(npcManager.getAI().isOnGround()) {
-            npcManager.leap(0.7f);
+            npcManager.leap(0.3f);
         }
 //        npcManager.jump();
     }

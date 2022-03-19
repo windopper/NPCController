@@ -1,6 +1,7 @@
 package com.kamilereon.npccontroller;
 
 import com.kamilereon.npccontroller.commands.BasicCommands;
+import com.kamilereon.npccontroller.listener.FisherManListener;
 import com.kamilereon.npccontroller.listener.PacketListener;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -14,6 +15,7 @@ public final class NPCControllerMain extends JavaPlugin {
     public void onEnable() {
         getLogger().info("NPCController enabled");
         Bukkit.getPluginManager().registerEvents(new PacketListener(), this);
+        Bukkit.getPluginManager().registerEvents(new FisherManListener(), this);
         NPCController.getInstance();
     }
 

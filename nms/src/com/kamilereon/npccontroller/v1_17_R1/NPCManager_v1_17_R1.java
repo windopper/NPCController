@@ -73,7 +73,7 @@ public class NPCManager_v1_17_R1 extends NPCManager {
         newGameProfile.getProperties().get("textures").clear();
         newGameProfile.getProperties().put("textures", new Property("textures", texture, signature));
         showns.forEach(this::sendHidePacket);
-        Bukkit.getScheduler().runTaskLater(NPCController.plugin, () -> showns.forEach(this::sendShowPacket), 10);
+        Bukkit.getScheduler().runTaskLater(NPCController.plugin, () -> getViewers().forEach(this::updateForFarShowns), 10);
     }
 
     @Override
@@ -138,7 +138,7 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     public void sendEquipmentPacket(Player player) {
         List<Pair<EnumItemSlot, ItemStack>> pairs = new ArrayList<>();
         for(EnumItemSlot enumItemSlot : equips.keySet()) {
-//            this.npc.getBukkitEntity().getEquipment().setItem(EquipmentSlot.values()[enumItemSlot.ordinal()], equips.get(enumItemSlot));
+            this.npc.getBukkitEntity().getEquipment().setItem(EquipmentSlot.values()[enumItemSlot.ordinal()], equips.get(enumItemSlot));
             Pair<EnumItemSlot, ItemStack> pair = new Pair<>(enumItemSlot, CraftItemStack.asNMSCopy(this.equips.get(enumItemSlot)));
             pairs.add(pair);
         }

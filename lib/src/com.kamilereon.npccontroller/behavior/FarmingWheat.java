@@ -2,6 +2,7 @@ package com.kamilereon.npccontroller.behavior;
 
 import com.kamilereon.npccontroller.NPCManager;
 import com.kamilereon.npccontroller.states.Animation;
+import com.kamilereon.npccontroller.states.ItemSlot;
 import com.kamilereon.npccontroller.utils.NumberUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -9,6 +10,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -30,18 +32,22 @@ public class FarmingWheat extends Behavior{
     public boolean check(NPCManager npcManager) {
 
         Location loc = npcManager.getLocation();
-        for(double x = loc.getX() - radius; x <= loc.getX() + radius; x++) {
-            for(double y = loc.getY() - radius; y <= loc.getY() + radius; y++) {
-                for(double z = loc.getZ() - radius; z <= loc.getZ() + radius; z++) {
-                    Location l = new Location(loc.getWorld(), x, y, z);
-                    if(l.getBlock().getType() == Material.FARMLAND) {
-                        if(l.clone().add(0, 1, 0).getBlock().getType() == Material.AIR) {
-                            farmlands.add(l);
+
+        if(npcManager.getInventory().contains(Material.WHEAT_SEEDS)) {
+            for(double x = loc.getX() - radius; x <= loc.getX() + radius; x++) {
+                for(double y = loc.getY() - radius; y <= loc.getY() + radius; y++) {
+                    for(double z = loc.getZ() - radius; z <= loc.getZ() + radius; z++) {
+                        Location l = new Location(loc.getWorld(), x, y, z);
+                        if(l.getBlock().getType() == Material.FARMLAND) {
+                            if(l.clone().add(0, 1, 0).getBlock().getType() == Material.AIR) {
+                                farmlands.add(l);
+                            }
                         }
                     }
                 }
             }
         }
+
         if(farmlands.size() > 0) {
             this.targetLoc = farmlands.stream().toList().get(NumberUtils.randomInt(0, farmlands.size()-1)).add(0, 1, 0);
             return true;
@@ -71,6 +77,7 @@ public class FarmingWheat extends Behavior{
     @Override
     public void firstAct(NPCManager npcManager) {
         this.tick = 40;
+        npcManager.setEquipment(ItemSlot.MAIN_HAND, new ItemStack(Material.WHEAT_SEEDS, 1));
         npcManager.navigateTo(targetLoc, 1.2, 2);
     }
 
@@ -83,6 +90,7 @@ public class FarmingWheat extends Behavior{
             BlockData data = Material.WHEAT.createBlockData();
             Ageable age = (Ageable) data;
             age.setAge(1);
+            npcManager.getInventory().removeItem(new ItemStack(Material.WHEAT_SEEDS, 1));
             this.targetLoc.getBlock().setBlockData(age);
             this.seedLocs.add(targetLoc);
         } else if(targetLoc.getBlock().getType() == Material.WHEAT){
@@ -91,6 +99,8 @@ public class FarmingWheat extends Behavior{
                 npcManager.playAnimation(Animation.SWING_MAIN_ARM);
                 npcManager.spawnParticle(Particle.BLOCK_DUST, targetLoc.clone().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0, age.getMaterial().createBlockData());
                 npcManager.playSound(targetLoc, Sound.BLOCK_CROP_BREAK, 1, 1);
+                targetLoc.getWorld().dropItem(targetLoc, new ItemStack(Material.WHEAT, 1));
+                targetLoc.getWorld().dropItem(targetLoc, new ItemStack(Material.WHEAT_SEEDS, npcManager.getRandom().nextInt(3)+1));
                 targetLoc.getBlock().setType(Material.AIR);
             }
         }

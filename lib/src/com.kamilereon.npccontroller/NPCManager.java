@@ -2,6 +2,7 @@ package com.kamilereon.npccontroller;
 
 import com.kamilereon.npccontroller.behavior.Behavior;
 import com.kamilereon.npccontroller.memory.MemoryModule;
+import com.kamilereon.npccontroller.memory.MemoryType;
 import com.kamilereon.npccontroller.metadata.BehaviorContainer;
 import com.kamilereon.npccontroller.metadata.MetaDataContainer;
 import com.kamilereon.npccontroller.states.Animation;
@@ -9,22 +10,21 @@ import com.kamilereon.npccontroller.states.ItemSlot;
 import com.kamilereon.npccontroller.states.Poses;
 import com.kamilereon.npccontroller.states.States;
 import com.kamilereon.npccontroller.utils.NameTagUtils;
+import net.minecraft.network.protocol.game.PacketPlayOutCollect;
 import net.minecraft.network.syncher.DataWatcher;
 import net.minecraft.server.level.EntityPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EnumItemSlot;
 import net.minecraft.world.entity.animal.horse.EntityHorse;
-import net.minecraft.world.entity.decoration.EntityArmorStand;
-import net.minecraft.world.entity.monster.EntityZombie;
 import net.minecraft.world.level.pathfinder.PathEntity;
 import net.minecraft.world.phys.Vec3D;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.ExperienceOrb;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.memory.MemoryKey;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -43,6 +43,7 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
     protected String texture = "";
     protected final UUID uuid = UUID.randomUUID();
     protected final Set<Player> showns = Collections.synchronizedSet(new HashSet<>()); // npc 를 볼 수 있는 권한이 있는 사람들
+    protected boolean showToAll = false;
     protected final Set<Player> farShowns = Collections.synchronizedSet(new HashSet<>()); // 이 npc 를 볼 권한은 있지만 너무 멀어서 볼 수 없음
     protected final HashMap<String, ArmorStand> listedNameLine = new HashMap<>(); // 이름
     protected String mainName = " ";
@@ -51,10 +52,12 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
     protected boolean canPickUpItem = false; // 아이템을 주울 수 있는지
     protected BukkitTask masterEntityTeleportLoop = null;
     protected int physicsTick; // 1틱에 한번 루프 ( 생성자 초기화 )
-    protected int LazyphysicsTick; // 10틱에 한번 루프 ( 생성자 초기화 )
+    protected int normalPhysicsTick;
+    protected int LazyPhysicsTick; // 10틱에 한번 루프 ( 생성자 초기화 )
 
     protected Map<EnumItemSlot, ItemStack> equips = new EnumMap<>(EnumItemSlot.class); // 장비
-    protected final List<ItemStack> inventory = new ArrayList<>(); // 인벤토리
+    protected final Inventory inventory = Bukkit.createInventory(null, 45, " ");
+//    protected final List<ItemStack> inventory = new ArrayList<>(); // 인벤토리
     protected final Map<ItemStack, Double> dropTable = new HashMap<>(); // 드랍테이블 & 확률
     protected final MetaDataContainer metaDataContainer = new MetaDataContainer(); // 메타데이터 패킷
     protected final BehaviorContainer behaviorContainer = new BehaviorContainer(this); // npc 인공지능
@@ -82,6 +85,8 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
                         cancel();
                     }
                     else {
+
+                        if(showToAll) { showns.addAll(Bukkit.getOnlinePlayers()); }
                         // Teleport Loop
                         Location loc = masterEntity.getBukkitEntity().getLocation();
                         getNPC().getBukkitEntity().teleport(loc);
@@ -102,16 +107,35 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
                         while(it.hasNext()) {
                             Player p = it.next();
                             if(loc.distance(p.getLocation()) < 35) {
-                                sendShowPacket(p);
+                                updateForFarShowns(p);
                                 it.remove();
                             }
+                        }
+
+                        // PickUp Item
+                        if(canPickUpItem) {
+                            if(!isInventoryFull()) {
+                                for(Item item : loc.getWorld().getEntitiesByClass(Item.class)) {
+                                    Location itemloc = item.getLocation();
+                                    if(itemloc.distance(loc) >= 2) continue;
+                                    if(item.getPickupDelay() > 0) continue;
+                                    PacketPlayOutCollect packetPlayOutCollect = new PacketPlayOutCollect(item.getEntityId(), npc.getId(), item.getItemStack().getAmount());
+                                    getViewers().forEach(p -> getPlayerConnection(p).sendPacket(packetPlayOutCollect));
+                                    putItemToInventory(item.getItemStack());
+                                    item.remove();
+                                }
+                            }
+                        }
+
+                        for(ExperienceOrb orb : loc.getWorld().getEntitiesByClass(ExperienceOrb.class)) {
+                            orb.remove();
                         }
                     }
                 }
             }
         }.runTaskTimer(NPCController.plugin, 0, 1).getTaskId();
 
-        this.LazyphysicsTick = new BukkitRunnable() {
+        this.LazyPhysicsTick = new BukkitRunnable() {
             @Override
             public void run() {
                 if(isDestroyed()) {
@@ -120,7 +144,7 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
                 }
                 boolean inRadius = false;
                 Location loc = getLocation();
-                for (Player shown : showns) {
+                for (Player shown : getViewers()) {
                     Location ploc = shown.getLocation();
                     try {
                         if(loc.distance(ploc) < despawnRadius) inRadius = true;
@@ -156,9 +180,18 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
 
     public AIEntity getAI() { return masterEntity; }
 
+    public boolean hasAI() { return masterEntityTeleportLoop != null; }
+
+    public EntityPlayer getNPC() { return npc; }
+
     public void setDespawnRadius(int despawnRadius) { this.despawnRadius = despawnRadius; }
 
     public Location getLocation() { return npc.getBukkitEntity().getLocation(); }
+
+    public Random getRandom() { return random; }
+
+
+    // MemoryModule Part
 
     public MemoryModule<?> getMemoryModuleIfPresent(String key) {
         for(MemoryModule<?> memoryKey : memories) {
@@ -170,6 +203,7 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
     }
 
     public void putMemoryModule(MemoryModule<?> memoryModule) {
+        memories.removeIf(m -> m.getMemoryKey().equals(memoryModule.getMemoryKey()));
         memories.add(memoryModule);
     }
 
@@ -177,20 +211,38 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
         memories.removeIf(memoryModule -> memoryModule.getMemoryKey().equals(key));
     }
 
-    public Random getRandom() { return random; }
-
-    public boolean hasAI() { return masterEntityTeleportLoop != null; }
-
-    public EntityPlayer getNPC() { return npc; }
-
-    public Set<Player> getViewers() { return showns; }
-
-    public void putItem(ItemStack itemStack) {
-        if(isInventoryFull()) return;
-        inventory.add(itemStack);
+    public void forgetMemory(MemoryType memoryType) {
+        memories.removeIf(m -> m.getMemoryType() == memoryType);
     }
 
-    public boolean isInventoryFull() { return inventory.size() > 45; }
+    //
+
+    /** Inventory Part */
+
+    public void putItemToInventory(ItemStack itemStack) {
+        if(isInventoryFull()) return;
+        inventory.addItem(itemStack);
+    }
+
+    public ItemStack removeAndGetItemFromInventory(int var) {
+        ItemStack itemStack = inventory.getItem(var);
+        inventory.remove(itemStack);
+        return itemStack;
+    }
+
+    public boolean isInventoryFull() { return inventory.firstEmpty() == -1; }
+
+    public Inventory getInventory() { return inventory; }
+
+    public int getUsedSlotInInventory() {
+        return Arrays.stream(inventory.getContents()).filter(Objects::nonNull).toList().size();
+    }
+
+    public int getUsedSlotInInventory(Material material) {
+        return Arrays.stream(inventory.getContents()).filter(Objects::nonNull).filter(i -> i.getType() == material).toList().size();
+    }
+
+    /** */
 
     public void setMainName(String var) {
         this.mainName = var;
@@ -207,12 +259,25 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
         }
     }
 
+    public Set<Player> getViewers() {
+        if(showToAll) {
+            return new HashSet<>(Bukkit.getOnlinePlayers());
+        }
+        return showns;
+    }
+
     public void addFarShowns(Player player) {
         farShowns.add(player);
     }
 
     public void removeFarShowns(Player player) {
         farShowns.remove(player);
+    }
+
+    public void showToAll() {
+        this.showToAll = true;
+        showns.addAll(Bukkit.getOnlinePlayers());
+        getViewers().forEach(this::sendShowPacket);
     }
 
     public void showTo(Player player) {
@@ -273,26 +338,33 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
 
     public void setEquipment(ItemSlot itemSlot, ItemStack itemStack) {
         equips.put(EnumItemSlot.values()[itemSlot.ordinal()], itemStack);
-        showns.forEach(this::sendEquipmentPacket);
+//        npc.getBukkitEntity().getEquipment().setItem(EquipmentSlot.values()[itemSlot.ordinal()], itemStack);
+        getViewers().forEach(this::sendEquipmentPacket);
     }
 
     public void playAnimation(Animation animation) {
-        showns.forEach(player -> sendAnimationPacket(player, animation.ordinal()));
+        getViewers().forEach(player -> sendAnimationPacket(player, animation.ordinal()));
     }
 
     public void setStates(States ...states) {
         this.metaDataContainer.setStates(states);
-        showns.forEach(this::sendMetadataPacket);
+        getViewers().forEach(this::sendMetadataPacket);
     }
 
     public void removeStates(States ...states) {
         this.metaDataContainer.removeStates(states);
-        showns.forEach(this::sendMetadataPacket);
+        getViewers().forEach(this::sendMetadataPacket);
     }
 
     public void setPoses(Poses pose) {
         metaDataContainer.setPoses(pose);
-        showns.forEach(this::sendMetadataPacket);
+        getViewers().forEach(this::sendMetadataPacket);
+    }
+
+    public void updateForFarShowns(Player player) {
+        sendShowPacket(player);
+        sendEquipmentPacket(player);
+        sendMetadataPacket(player);
     }
 
     @Override
@@ -300,8 +372,13 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
         behaviorContainer.setBehavior(priority, behavior);
     }
 
+    @Override
+    public void setBehavior(int priority, Behavior behavior, boolean forceStart) {
+
+    }
+
     public void playSound(Location location, Sound sound, float volume, float pitch) {
-        for(Player player : showns) {
+        for(Player player : getViewers()) {
             if(player.getWorld().equals(location.getWorld())) {
                 player.getWorld().playSound(location, sound, volume, pitch);
             }
@@ -309,7 +386,7 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
     }
 
     public <T> void spawnParticle(Particle particle, Location location, int amount, double x, double y, double z, double speed, T t) {
-        for(Player player : showns) {
+        for(Player player : getViewers()) {
             if(player.getWorld().equals(location.getWorld())) {
                 player.getWorld().spawnParticle(particle, location, amount, x, y, z, t);
             }
@@ -324,6 +401,14 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
         AIEntity ev = this.masterEntity;
         PathEntity pe = ev.getNavigation().a(location.getX(), location.getY(), location.getZ(), nearbyDist);
         return !ev.getNavigation().a(pe, speed);
+    }
+
+    public void stopNavigating() {
+        this.masterEntity.getNavigation().o();
+    }
+
+    public double distanceTo(Location location) {
+        return location.distance(getLocation());
     }
 
     @Override

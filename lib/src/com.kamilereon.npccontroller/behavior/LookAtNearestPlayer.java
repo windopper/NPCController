@@ -21,6 +21,7 @@ public class LookAtNearestPlayer extends Behavior {
         this.radius = radius;
         this.predicate = predicate;
         this.percent = percent;
+        this.canForceStop = true;
     }
 
     @Override

@@ -1,13 +1,10 @@
 package com.kamilereon.npccontroller.behavior;
 
-import com.kamilereon.npccontroller.AIEntity;
 import com.kamilereon.npccontroller.NPCManager;
 import com.kamilereon.npccontroller.memory.MemoryModule;
 import com.kamilereon.npccontroller.states.ItemSlot;
 import net.minecraft.network.protocol.game.PacketPlayOutCollect;
-import net.minecraft.network.protocol.game.PacketPlayOutEntityStatus;
 import net.minecraft.server.level.EntityPlayer;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
@@ -17,13 +14,15 @@ public class ChickenFriedDone extends Behavior{
 
     protected Location targetLoc;
     protected boolean getItem = false;
+    protected double rate;
 
-    public ChickenFriedDone() {
-
+    public ChickenFriedDone(double rate) {
+        this.rate = rate;
     }
 
     @Override
     public boolean check(NPCManager npcManager) {
+        if(npcManager.getRandom().nextDouble() > rate) return false;
         MemoryModule<?> memoryModule = npcManager.getMemoryModuleIfPresent("chickenFried");
         if(memoryModule == null) return false;
         else {
@@ -43,7 +42,8 @@ public class ChickenFriedDone extends Behavior{
 
     @Override
     public boolean whileCheck(NPCManager npcManager) {
-        return !getItem;
+        Location loc = npcManager.getLocation();
+        return loc.distance(targetLoc) >= 3;
     }
 
     @Override
@@ -53,6 +53,16 @@ public class ChickenFriedDone extends Behavior{
 
     @Override
     public void endAct(NPCManager npcManager) {
+        Location loc = npcManager.getLocation();
+        EntityPlayer npc = npcManager.getNPC();
+        for(Item item : loc.getWorld().getEntitiesByClass(Item.class)) {
+            Location itloc = item.getLocation();
+            if(itloc.distance(loc) >= 3) continue;
+            PacketPlayOutCollect packetPlayOutCollect = new PacketPlayOutCollect(item.getEntityId(), npc.getId(), item.getItemStack().getAmount());
+            npcManager.getViewers().forEach(p -> npcManager.getPlayerConnection(p).sendPacket(packetPlayOutCollect));
+            npcManager.putItemToInventory(item.getItemStack());
+            item.remove();
+        }
         npcManager.setEquipment(ItemSlot.MAIN_HAND, new ItemStack(Material.COOKED_CHICKEN, 1));
         npcManager.removeMemoryModule("chickenFried");
         targetLoc = null;
@@ -60,21 +70,6 @@ public class ChickenFriedDone extends Behavior{
     }
     @Override
     public void act(NPCManager npcManager) {
-        Location loc = npcManager.getLocation();
-        EntityPlayer npc = npcManager.getNPC();
-        if(loc.distance(targetLoc) < 2) {
-            for(Item item : loc.getWorld().getEntitiesByClass(Item.class)) {
-                Location itloc = item.getLocation();
-                if(itloc.distance(loc) >= 2) continue;
-                PacketPlayOutCollect packetPlayOutCollect = new PacketPlayOutCollect(item.getEntityId(), npc.getId(), item.getItemStack().getAmount());
-                npcManager.getViewers().forEach(p -> npcManager.getPlayerConnection(p).sendPacket(packetPlayOutCollect));
-                npcManager.putItem(item.getItemStack());
-                item.remove();
-            }
-            getItem = true;
-        }
-        else {
-            npcManager.navigateTo(targetLoc, 1, 2);
-        }
+        npcManager.navigateTo(targetLoc, 1, 2);
     }
 }

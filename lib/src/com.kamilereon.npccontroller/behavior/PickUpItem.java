@@ -4,8 +4,6 @@ import com.kamilereon.npccontroller.NPCManager;
 import net.minecraft.network.protocol.game.PacketPlayOutCollect;
 import net.minecraft.world.entity.monster.EntityZombie;
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 
 import java.util.HashSet;
@@ -49,7 +47,7 @@ public class PickUpItem extends Behavior {
             if(npcManager.isInventoryFull()) return;
             PacketPlayOutCollect packetPlayOutCollect = new PacketPlayOutCollect(item.getEntityId(), npc.getId(), item.getItemStack().getAmount());
             npcManager.getViewers().forEach(p -> npcManager.getPlayerConnection(p).sendPacket(packetPlayOutCollect));
-            npcManager.putItem(item.getItemStack());
+            npcManager.putItemToInventory(item.getItemStack());
             item.remove();
         }
     }

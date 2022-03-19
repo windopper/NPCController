@@ -1,6 +1,7 @@
 package com.kamilereon.npccontroller;
 
 import com.kamilereon.npccontroller.utils.Logger;
+import io.netty.util.internal.ConcurrentSet;
 import net.minecraft.server.network.PlayerConnection;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -15,7 +16,7 @@ import java.util.Set;
 public class NPCController {
 
     public static final Plugin plugin = NPCControllerMain.getPlugin(NPCControllerMain.class);
-    private static final Set<NPCManager> NPC_MANAGERS = new HashSet<>();
+    private static final Set<NPCManager> NPC_MANAGERS = new ConcurrentSet<>();
     private static final NPCController instance = new NPCController();
     private final Class<?> nmsClass;
     private final Logger logger;
@@ -107,4 +108,13 @@ public class NPCController {
     public Logger getLogger() { return logger; }
 
     public static Set<NPCManager> getNpcManagers() { return NPC_MANAGERS; }
+
+    public static NPCManager getNPCManager(int id) {
+        for(NPCManager npcManager : getNpcManagers()) {
+            if(npcManager.getNPC().getId() == id) {
+                return npcManager;
+            }
+        }
+        return null;
+    }
 }
