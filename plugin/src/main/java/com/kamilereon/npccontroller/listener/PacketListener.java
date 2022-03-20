@@ -4,6 +4,7 @@ import com.kamilereon.npccontroller.NPCController;
 import com.kamilereon.npccontroller.NPCManager;
 import io.netty.channel.*;
 import net.minecraft.network.protocol.game.*;
+import net.minecraft.network.syncher.DataWatcher;
 import org.bukkit.Bukkit;
 import org.bukkit.craftbukkit.libs.it.unimi.dsi.fastutil.ints.IntList;
 import org.bukkit.craftbukkit.libs.it.unimi.dsi.fastutil.ints.IntListIterator;
@@ -16,6 +17,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 public class PacketListener implements Listener {
 
@@ -64,16 +66,23 @@ public class PacketListener implements Listener {
                         }
                     }
                 }
-//                if(packet instanceof PacketPlayOutChat) return;
-//                if(packet instanceof PacketPlayOutAbilities) return;
-//                if(packet instanceof PacketPlayOutUpdateAttributes) return;
-//                if(packet instanceof PacketPlayInFlying) return;
-//                if(packet instanceof PacketPlayOutLightUpdate) return;
-//                if(packet instanceof PacketPlayOutMapChunk) return;
-//
-//                if(!pre.equals(packet.getClass().getName())) {
-//                    pre = packet.getClass().getName();
-//                }
+                if(packet instanceof PacketPlayOutChat) return;
+                if(packet instanceof PacketPlayOutAbilities) return;
+                if(packet instanceof PacketPlayOutUpdateAttributes) return;
+                if(packet instanceof PacketPlayInFlying) return;
+                if(packet instanceof PacketPlayOutLightUpdate) return;
+                if(packet instanceof PacketPlayOutMapChunk) return;
+                if(packet instanceof PacketPlayOutEntityMetadata m) {
+                    List<DataWatcher.Item<?>> b = m.b();
+                    for(DataWatcher.Item i : b) {
+//                        Bukkit.broadcastMessage(i.a().a()+ "   "+ i.b());
+                    }
+                }
+
+                if(!pre.equals(packet.getClass().getName())) {
+                    pre = packet.getClass().getName();
+//                    Bukkit.broadcastMessage(pre);
+                }
             }
         };
 

@@ -13,6 +13,7 @@ import java.util.Map;
 public class MetaDataContainer implements Cloneable {
     private Map<States, Byte> states = new EnumMap<>(States.class);
     private Poses pose = Poses.STANDING;
+    private boolean isHandTriggered = false; // Hand states, used to trigger blocking/eating/drinking animation.
 
     public void setStates(States ...states) {
         Arrays.stream(states).forEach(K -> this.states.put(K, K.getBitMask()));
@@ -29,6 +30,12 @@ public class MetaDataContainer implements Cloneable {
     public Map<States, Byte> getStates() { return states; }
 
     public Poses getPose() { return pose; }
+
+    public void setHandState(boolean value) {
+        this.isHandTriggered = value;
+    }
+
+    public boolean getHandState() { return isHandTriggered; }
 
     @Override
     public MetaDataContainer clone() {

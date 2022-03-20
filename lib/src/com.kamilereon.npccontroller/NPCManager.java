@@ -190,6 +190,12 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
 
     public Random getRandom() { return random; }
 
+    public <T> T getRandomOne(List<T> list) {
+        if(list.size() == 0) return null;
+        return list.get(getRandom().nextInt(list.size()));
+    }
+
+
 
     // MemoryModule Part
 
@@ -212,7 +218,7 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
     }
 
     public void forgetMemory(MemoryType memoryType) {
-        memories.removeIf(m -> m.getMemoryType() == memoryType);
+        memories.removeIf(m -> m.getMemoryType().equals(memoryType));
     }
 
     //
@@ -361,8 +367,19 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
         getViewers().forEach(this::sendMetadataPacket);
     }
 
+    public void triggerHand(boolean value) {
+        // Hand states, used to trigger blocking/eating/drinking animation.
+        this.metaDataContainer.setHandState(value);
+        getViewers().forEach(this::sendMetadataPacket);
+    }
+
+    public boolean isHandTriggered() {
+        return this.metaDataContainer.getHandState();
+    }
+
     public void updateForFarShowns(Player player) {
         sendShowPacket(player);
+
         sendEquipmentPacket(player);
         sendMetadataPacket(player);
     }
@@ -423,6 +440,6 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
         if(var1.g() > 1.0E-7D) {
             var1 = var1.d().a(power).e(var0.a(0.2D));
         }
-        this.getAI().setMot(var1.b, 0.4D, var1.d);
+        this.getAI().setMot(var1.b, 0.2D, var1.d);
     }
 }

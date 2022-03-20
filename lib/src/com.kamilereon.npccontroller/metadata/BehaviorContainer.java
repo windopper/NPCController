@@ -2,7 +2,11 @@ package com.kamilereon.npccontroller.metadata;
 
 import com.kamilereon.npccontroller.NPCManager;
 import com.kamilereon.npccontroller.behavior.Behavior;
+import com.kamilereon.npccontroller.memory.MemoryImportance;
+import com.kamilereon.npccontroller.memory.MemoryModule;
 import com.kamilereon.npccontroller.utils.SchedulerUtils;
+import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,6 +27,8 @@ public class BehaviorContainer {
         sortBehavior();
     }
 
+    public Behavior getCurrentBehavior() { return this.currentBehavior; }
+
     public void removeBehavior(Class<? extends Behavior> behavior) {
         for(Behavior b : behaviors.keySet()) {
             if(b.getClass() == behavior) {
@@ -35,7 +41,6 @@ public class BehaviorContainer {
 
     public void behaviorProcess() {
 
-
         if(currentBehavior != null) {
 
             // If currentBehavior can forceStop
@@ -43,35 +48,35 @@ public class BehaviorContainer {
                 for(Behavior behavior : sortedBehaviors.stream().map(Map.Entry::getKey).toList()) {
                     // check forceStart if possible
                     if(!behavior.isCanForceStart()) continue;
-                    if(behavior.check(npcManager)) {
-                        currentBehavior.endAct(npcManager);
+                    if(behavior.check()) {
+                        currentBehavior.endAct();
                         currentBehavior = behavior;
-                        behavior.firstAct(npcManager);
+                        behavior.firstAct();
                         return;
                     }
                 }
             }
 
-            if(currentBehavior.whileCheck(npcManager)) {
-                currentBehavior.act(npcManager);
+            if(currentBehavior.whileCheck()) {
+                currentBehavior.act();
                 return;
             } else {
-                currentBehavior.endAct(npcManager);
+                currentBehavior.endAct();
+                currentBehavior = null;
             }
         }
 
-        currentBehavior = null;
-        for(Behavior behavior : sortedBehaviors.stream().map(Map.Entry::getKey).collect(Collectors.toSet())) {
-            if(behavior.check(npcManager)) {
+        for(Behavior behavior : sortedBehaviors.stream().map(Map.Entry::getKey).toList()) {
+            if(behavior.check()) {
                 currentBehavior = behavior;
-                behavior.firstAct(npcManager);
+                behavior.firstAct();
                 return;
             }
         }
     }
 
     public void forceStopBehavior() {
-        currentBehavior.endAct(npcManager);
+        currentBehavior.endAct();
         this.currentBehavior = null;
     }
 
@@ -81,6 +86,14 @@ public class BehaviorContainer {
     }
 
     public Map<Behavior, Integer> getBehaviorMap() { return this.behaviors; }
+
+    public void createDestinationMemory(Entity target, MemoryImportance importance) {
+        this.npcManager.putMemoryModule(new MemoryModule<>(importance, "WalkToDestination", target));
+    }
+
+    public void createDestinationMemory(Location target, MemoryImportance importance) {
+        this.npcManager.putMemoryModule(new MemoryModule<>(importance, "WalkToDestination", target));
+    }
 
 
 }

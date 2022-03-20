@@ -18,12 +18,13 @@ public class ThrowHook extends Behavior {
     protected Location fishingPoint;
     protected int tick;
 
-    public ThrowHook() {
-
+    public ThrowHook(NPCManager npcManager) {
+        super(npcManager);
+        this.canForceStop = false;
     }
 
     @Override
-    public boolean check(NPCManager npcManager) {
+    public boolean check() {
         if(fishingPoint == null) fishingPoint = new Location(npcManager.getLocation().getWorld(), 166, 64, 47);
         if(npcManager.getMemoryModuleIfPresent("throw_fishhook") != null) {
             MemoryModule<?> throw_fishhook = npcManager.getMemoryModuleIfPresent("throw_fishhook");
@@ -41,20 +42,20 @@ public class ThrowHook extends Behavior {
     }
 
     @Override
-    public boolean whileCheck(NPCManager npcManager) {
+    public boolean whileCheck() {
         Location loc = npcManager.getLocation();
         return loc.distance(fishingPoint) > 2 || this.tick > 0;
     }
 
     @Override
-    public void firstAct(NPCManager npcManager) {
+    public void firstAct() {
         npcManager.navigateTo(fishingPoint, 1.5, 1);
         npcManager.setEquipment(ItemSlot.MAIN_HAND, new ItemStack(Material.FISHING_ROD, 1));
         this.tick = 30;
     }
 
     @Override
-    public void endAct(NPCManager npcManager) {
+    public void endAct() {
         EntityPlayer npc = npcManager.getNPC();
         FishHook fishHook = npc.getBukkitEntity().launchProjectile(FishHook.class);
         npcManager.playAnimation(Animation.SWING_MAIN_ARM);
@@ -62,7 +63,7 @@ public class ThrowHook extends Behavior {
     }
 
     @Override
-    public void act(NPCManager npcManager) {
+    public void act() {
         --this.tick;
         npcManager.navigateTo(fishingPoint, 1.5, 1);
         npcManager.lookAt(fishingPoint.clone().add(0, 2, 0));

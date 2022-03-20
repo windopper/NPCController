@@ -129,8 +129,10 @@ public class NPCManager_v1_17_R1 extends NPCManager {
         for(byte b : metaDataContainer.getStates().values()) {
             i |= b;
         }
+        byte index8 = this.metaDataContainer.getHandState() ? (byte) 0x01 : (byte) 0x00;
         this.dataWatcher.set(DataWatcherRegistry.a.a(0), i);
         this.dataWatcher.set(DataWatcherRegistry.s.a(6), EntityPose.values()[metaDataContainer.getPose().getVarInt()]);
+        this.dataWatcher.set(DataWatcherRegistry.a.a(8), index8);
         getPlayerConnection(player).sendPacket(new PacketPlayOutEntityMetadata(npc.getId(), dataWatcher, true));
     }
 
@@ -138,11 +140,14 @@ public class NPCManager_v1_17_R1 extends NPCManager {
     public void sendEquipmentPacket(Player player) {
         List<Pair<EnumItemSlot, ItemStack>> pairs = new ArrayList<>();
         for(EnumItemSlot enumItemSlot : equips.keySet()) {
-            this.npc.getBukkitEntity().getEquipment().setItem(EquipmentSlot.values()[enumItemSlot.ordinal()], equips.get(enumItemSlot));
+            getNPC().getBukkitEntity().getEquipment().setItem(EquipmentSlot.values()[enumItemSlot.ordinal()], equips.get(enumItemSlot));
             Pair<EnumItemSlot, ItemStack> pair = new Pair<>(enumItemSlot, CraftItemStack.asNMSCopy(this.equips.get(enumItemSlot)));
             pairs.add(pair);
         }
-        getPlayerConnection(player).sendPacket(new PacketPlayOutEntityEquipment(npc.getId(), pairs));
+        if(pairs.size() >= 1) {
+            getPlayerConnection(player).sendPacket(new PacketPlayOutEntityEquipment(npc.getId(), pairs));
+        }
+
     }
 
 

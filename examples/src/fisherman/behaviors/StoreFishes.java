@@ -19,12 +19,13 @@ public class StoreFishes extends Behavior {
     protected Location targetLoc;
     protected int tick;
 
-    public StoreFishes(int radius) {
+    public StoreFishes(NPCManager npcManager, int radius) {
+        super(npcManager);
         this.radius = radius;
     }
 
     @Override
-    public boolean check(NPCManager npcManager) {
+    public boolean check() {
         if(npcManager.getMemoryModuleIfPresent("throw_fishhook") != null) return false;
         if(npcManager.getUsedSlotInInventory() < 4) return false;
         MemoryModule<?> fishChest = npcManager.getMemoryModuleIfPresent("fishchest");
@@ -42,18 +43,18 @@ public class StoreFishes extends Behavior {
     }
 
     @Override
-    public boolean whileCheck(NPCManager npcManager) {
+    public boolean whileCheck() {
         return targetLoc.getBlock().getType() == Material.CHEST && this.tick > 0;
     }
 
     @Override
-    public void firstAct(NPCManager npcManager) {
+    public void firstAct() {
         npcManager.navigateTo(targetLoc, 1.5, 1);
         this.tick = 40;
     }
 
     @Override
-    public void endAct(NPCManager npcManager) {
+    public void endAct() {
         if(targetLoc.getBlock().getType() != Material.CHEST) {
             npcManager.removeMemoryModule("fishchest");
         } else {
@@ -68,7 +69,7 @@ public class StoreFishes extends Behavior {
     }
 
     @Override
-    public void act(NPCManager npcManager) {
+    public void act() {
         if(npcManager.distanceTo(targetLoc) > 3) {
             npcManager.navigateTo(targetLoc, 1.5, 2);
             npcManager.lookAt(targetLoc);

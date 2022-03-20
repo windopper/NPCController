@@ -1,6 +1,7 @@
-package com.kamilereon.npccontroller.behavior;
+package com.kamilereon.npccontroller.behavior.standard;
 
 import com.kamilereon.npccontroller.NPCManager;
+import com.kamilereon.npccontroller.behavior.Behavior;
 import com.kamilereon.npccontroller.utils.NumberUtils;
 import net.minecraft.server.level.EntityPlayer;
 import net.minecraft.world.entity.Entity;
@@ -17,7 +18,8 @@ public class LookAtNearestPlayer extends Behavior {
     private int tick = 0;
     private double percent;
 
-    public LookAtNearestPlayer(double radius, Predicate<Player> predicate, double percent) {
+    public LookAtNearestPlayer(NPCManager npcManager, double radius, Predicate<Player> predicate, double percent) {
+        super(npcManager);
         this.radius = radius;
         this.predicate = predicate;
         this.percent = percent;
@@ -25,7 +27,7 @@ public class LookAtNearestPlayer extends Behavior {
     }
 
     @Override
-    public boolean check(NPCManager npcManager) {
+    public boolean check() {
         if(NumberUtils.randomDouble(0, 1) > percent) return false;
         Entity npc = npcManager.getAI();
         Location loc = npc.getBukkitEntity().getLocation();
@@ -43,7 +45,7 @@ public class LookAtNearestPlayer extends Behavior {
     }
 
     @Override
-    public boolean whileCheck(NPCManager npcManager) {
+    public boolean whileCheck() {
         if(this.target.isDead()) {
            return false;
         } else if(this.target.getLocation().distance(npcManager.getAI().getBukkitEntity().getLocation()) > this.radius) {
@@ -54,17 +56,17 @@ public class LookAtNearestPlayer extends Behavior {
     }
 
     @Override
-    public void firstAct(NPCManager npcManager) {
+    public void firstAct() {
         this.tick = 40 + NumberUtils.randomInt(0, 40);
     }
 
     @Override
-    public void endAct(NPCManager npcManager) {
+    public void endAct() {
         this.target = null;
     }
 
     @Override
-    public void act(NPCManager npcManager) {
+    public void act() {
         npcManager.getAI().getControllerLook().a(target.getLocation().getX(), target.getEyeLocation().getY(), target.getLocation().getZ());
         --this.tick;
     }

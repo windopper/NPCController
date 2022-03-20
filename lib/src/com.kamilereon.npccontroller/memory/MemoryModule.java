@@ -2,26 +2,27 @@ package com.kamilereon.npccontroller.memory;
 
 public class MemoryModule<T>  {
 
+    protected int forgetTime;
     protected MemoryType type;
-    protected int importance; // 0 ~ 100
+    protected MemoryImportance importance; // 0 ~ 100
     protected String memoryKey;
     protected T data;
 
     public MemoryModule(String memoryKey, T data) {
         this.type = MemoryType.OTHER;
-        this.importance = 50;
+        this.importance = MemoryImportance.MEDIUM;
         this.memoryKey = memoryKey;
         this.data = data;
     }
 
-    public MemoryModule(int importance, String memoryKey, T data) {
+    public MemoryModule(MemoryImportance importance, String memoryKey, T data) {
         this.type = MemoryType.OTHER;
         this.importance = importance;
         this.memoryKey = memoryKey;
         this.data = data;
     }
 
-    public MemoryModule(MemoryType type, int importance, String memoryKey, T data) {
+    public MemoryModule(MemoryType type, MemoryImportance importance, String memoryKey, T data) {
         this.type = type;
         this.importance = importance;
         this.memoryKey = memoryKey;
@@ -30,14 +31,14 @@ public class MemoryModule<T>  {
 
     public MemoryModule(MemoryType type, String memoryKey, T data) {
         this.type = type;
-        this.importance = 50;
+        this.importance = MemoryImportance.MEDIUM;
         this.memoryKey = memoryKey;
         this.data = data;
     }
 
-    public int getImportance() { return this.importance; }
+    public MemoryImportance getImportance() { return this.importance; }
 
-    public void setImportance(int var) { this.importance = var; }
+    public void setImportance(MemoryImportance var) { this.importance = var; }
 
     public String getMemoryKey() { return memoryKey; }
 

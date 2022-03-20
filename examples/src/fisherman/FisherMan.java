@@ -2,14 +2,13 @@ package fisherman;
 
 import com.kamilereon.npccontroller.NPCController;
 import com.kamilereon.npccontroller.NPCManager;
-import com.kamilereon.npccontroller.behavior.LookAtNearestPlayer;
-import com.kamilereon.npccontroller.behavior.RandomLookAround;
-import fisherman.behaviors.ProtectingMyFishes;
-import fisherman.behaviors.StoreFishes;
-import fisherman.behaviors.ThrowHook;
-import fisherman.behaviors.CaughtFish;
+import com.kamilereon.npccontroller.behavior.standard.LookAtNearestPlayer;
+import com.kamilereon.npccontroller.behavior.standard.RandomLookAround;
+import fisherman.behaviors.*;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+
+import java.io.InputStream;
 
 public class FisherMan {
     public static void create(Location location, Player player) {
@@ -19,12 +18,13 @@ public class FisherMan {
         npcManager.setCanPickUpItem(true);
         npcManager.showToAll();
 
-        npcManager.setBehavior(0, new CaughtFish());
-        npcManager.setBehavior(0, new ProtectingMyFishes(5));
-        npcManager.setBehavior(1, new ThrowHook());
-        npcManager.setBehavior(2, new StoreFishes(20));
-        npcManager.setBehavior(3, new RandomLookAround());
-        npcManager.setBehavior(4, new LookAtNearestPlayer(3, (p) -> true, 0.25));
+        npcManager.setBehavior(0, new CaughtFish(npcManager));
+        npcManager.setBehavior(0, new ProtectingMyFishes(npcManager, 5));
+        npcManager.setBehavior(0, new DropItem(npcManager));
+        npcManager.setBehavior(1, new ThrowHook(npcManager));
+        npcManager.setBehavior(2, new StoreFishes(npcManager, 20));
+        npcManager.setBehavior(3, new RandomLookAround(npcManager));
+        npcManager.setBehavior(4, new LookAtNearestPlayer(npcManager,3, (p) -> true, 0.25));
 
     }
 }

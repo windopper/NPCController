@@ -13,13 +13,14 @@ public class CaughtFish extends Behavior {
     protected FishHook fishHook;
     protected int tick;
 
-    public CaughtFish() {
+    public CaughtFish(NPCManager npcManager) {
+        super(npcManager);
         this.forceStartIfNecessary = true;
         this.canForceStop = false;
     }
 
     @Override
-    public boolean check(NPCManager npcManager) {
+    public boolean check() {
 
         MemoryModule<?> throw_fishhook = npcManager.getMemoryModuleIfPresent("throw_fishhook");
         MemoryModule<?> caught_fish = npcManager.getMemoryModuleIfPresent("caught_fish");
@@ -37,18 +38,18 @@ public class CaughtFish extends Behavior {
     }
 
     @Override
-    public void firstAct(NPCManager npcManager) {
+    public void firstAct() {
         npcManager.lookAt(fishHook.getLocation());
         this.tick = 20;
     }
 
     @Override
-    public boolean whileCheck(NPCManager npcManager) {
+    public boolean whileCheck() {
         return this.tick > 0;
     }
 
     @Override
-    public void endAct(NPCManager npcManager) {
+    public void endAct() {
         EntityFishingHook entityFishingHook = ((CraftFishHook) this.fishHook).getHandle();
         entityFishingHook.a(CraftItemStack.asNMSCopy(npcManager.getNPC().getBukkitEntity().getEquipment().getItemInMainHand()));
         npcManager.removeMemoryModule("throw_fishhook");
@@ -57,7 +58,7 @@ public class CaughtFish extends Behavior {
     }
 
     @Override
-    public void act(NPCManager npcManager) {
+    public void act() {
         --this.tick;
     }
 }

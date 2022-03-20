@@ -1,6 +1,7 @@
-package com.kamilereon.npccontroller.behavior;
+package com.kamilereon.npccontroller.behavior.standard;
 
 import com.kamilereon.npccontroller.NPCManager;
+import com.kamilereon.npccontroller.behavior.Behavior;
 import com.kamilereon.npccontroller.utils.NumberUtils;
 import net.minecraft.core.BlockPosition;
 import net.minecraft.world.entity.Entity;
@@ -24,13 +25,15 @@ public class Idle extends Behavior {
     private double z;
     private double rate;
 
-    public Idle(double speed, double rate) {
+    public Idle(NPCManager npcManager, double speed, double rate) {
+        super(npcManager);
         this.speed = speed;
         this.rate = rate;
+        this.canForceStop = true;
     }
 
     @Override
-    public boolean check(NPCManager npcManager) {
+    public boolean check() {
         if(NumberUtils.randomDouble(0, 1) > rate) return false;
         Vec3D var = randomPos(npcManager.getAI());
         if(var == null) return false;
@@ -43,24 +46,24 @@ public class Idle extends Behavior {
     }
 
     @Override
-    public boolean whileCheck(NPCManager npcManager) {
+    public boolean whileCheck() {
         EntityZombie entityZombie = npcManager.getAI();
         return !entityZombie.getNavigation().m() && !entityZombie.isVehicle();
     }
 
     @Override
-    public void firstAct(NPCManager npcManager) {
+    public void firstAct() {
         NavigationAbstract n = npcManager.getAI().getNavigation();
         n.a(this.x, this.y, this.z, this.speed);
     }
 
     @Override
-    public void endAct(NPCManager npcManager) {
+    public void endAct() {
         npcManager.getAI().getNavigation().o();
     }
 
     @Override
-    public void act(NPCManager npcManager) {
+    public void act() {
 
     }
 

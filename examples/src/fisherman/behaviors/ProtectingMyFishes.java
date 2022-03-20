@@ -19,14 +19,15 @@ public class ProtectingMyFishes extends Behavior {
     protected Location loc;
     protected double radius;
 
-    public ProtectingMyFishes(double radius) {
+    public ProtectingMyFishes(NPCManager npcManager, double radius) {
+        super(npcManager);
         this.forceStartIfNecessary = true;
         this.canForceStop = false;
         this.radius = radius;
     }
 
     @Override
-    public boolean check(NPCManager npcManager) {
+    public boolean check() {
         MemoryModule<?> fishchest = npcManager.getMemoryModuleIfPresent("fishchest");
         if(fishchest != null) {
             this.loc = (Location) fishchest.getData();
@@ -41,25 +42,25 @@ public class ProtectingMyFishes extends Behavior {
     }
 
     @Override
-    public boolean whileCheck(NPCManager npcManager) {
+    public boolean whileCheck() {
         return target.getLocation().distance(loc) < radius;
     }
 
     @Override
-    public void firstAct(NPCManager npcManager) {
+    public void firstAct() {
         npcManager.forgetMemory(MemoryType.WORKING);
         npcManager.setEquipment(ItemSlot.MAIN_HAND, null);
         npcManager.navigateTo(target.getLocation(), 1.5, 3);
     }
 
     @Override
-    public void endAct(NPCManager npcManager) {
+    public void endAct() {
         this.loc = null;
         this.target = null;
     }
 
     @Override
-    public void act(NPCManager npcManager) {
+    public void act() {
 
         boolean value = npcManager.navigateTo(target.getLocation(), 1.5, 3);
         if(npcManager.distanceTo(target.getLocation())<3.5) {
