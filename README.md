@@ -1,2 +1,1 @@
-# NPCController
-
+# NPCBehavior
