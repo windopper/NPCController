@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPosition;
 import net.minecraft.core.EnumDirection;
 import net.minecraft.network.protocol.game.PacketPlayInBlockDig;
 import net.minecraft.world.entity.monster.EntitySkeleton;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -30,7 +31,7 @@ public class BowShoot extends Behavior {
     public boolean check() {
         MemoryModule<?> module = npcManager.getMemoryModuleIfPresent("target");
         if(module == null ) return false;
-        Entity t = (Entity)  module.getData();
+        Entity t = (Entity) module.getData();
         if(t == null) return false;
         this.target = t;
         return true;
@@ -62,10 +63,10 @@ public class BowShoot extends Behavior {
     public void act() {
         --this.tick;
 
-        npcManager.lookAt(target.getLocation().add(0, 2.3, 0));
+        npcManager.lookAt(target.getLocation().add(0, 1.6, 0));
 
         if(this.tick == 10) {
-            npcManager.getNPC().getBukkitEntity().launchProjectile(Arrow.class);
+            Arrow arrow = npcManager.getNPC().getBukkitEntity().launchProjectile(Arrow.class);
             npcManager.triggerHand(false);
         }
         if(this.tick == 9) {

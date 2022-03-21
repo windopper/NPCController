@@ -78,7 +78,9 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
                     destroy();
                     cancel();
                 }
+
                 behaviorContainer.behaviorProcess();
+
                 if(masterEntity != null) {
                     if (masterEntity.getBukkitEntity().isDead()) {
                         destroy();
@@ -87,6 +89,7 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
                     else {
 
                         if(showToAll) { showns.addAll(Bukkit.getOnlinePlayers()); }
+
                         // Teleport Loop
                         Location loc = masterEntity.getBukkitEntity().getLocation();
                         getNPC().getBukkitEntity().teleport(loc);
@@ -106,6 +109,7 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
                         Iterator<Player> it = farShowns.iterator();
                         while(it.hasNext()) {
                             Player p = it.next();
+                            p.getNoDamageTicks();
                             if(loc.distance(p.getLocation()) < 35) {
                                 updateForFarShowns(p);
                                 it.remove();
@@ -126,6 +130,15 @@ public abstract class NPCManager implements PacketHandler, PacketUtil, NPCAIUtil
                                 }
                             }
                         }
+
+                        // MasterEntity damaged
+                        if(masterEntity.getNoDamageTicks() > 0) {
+                            if(!metaDataContainer.isRed) {
+                                playAnimation(Animation.TAKE_DAMAGE);
+                                metaDataContainer.isRed = true;
+                            }
+                        }
+                        else if(metaDataContainer.isRed) metaDataContainer.isRed = false;
 
                         for(ExperienceOrb orb : loc.getWorld().getEntitiesByClass(ExperienceOrb.class)) {
                             orb.remove();

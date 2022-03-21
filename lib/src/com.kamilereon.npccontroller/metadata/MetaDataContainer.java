@@ -14,6 +14,7 @@ public class MetaDataContainer implements Cloneable {
     private Map<States, Byte> states = new EnumMap<>(States.class);
     private Poses pose = Poses.STANDING;
     private boolean isHandTriggered = false; // Hand states, used to trigger blocking/eating/drinking animation.
+    public boolean isRed = false;
 
     public void setStates(States ...states) {
         Arrays.stream(states).forEach(K -> this.states.put(K, K.getBitMask()));

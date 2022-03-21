@@ -4,6 +4,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;

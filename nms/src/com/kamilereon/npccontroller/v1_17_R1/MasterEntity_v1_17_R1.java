@@ -16,6 +16,7 @@ public class MasterEntity_v1_17_R1 extends AIEntity {
         super(world);
     }
 
+
     public static AIEntity summon(Location location) {
         World nmsWorld = ((CraftWorld) location.getWorld()).getHandle();
         MasterEntity_v1_17_R1 entityAI = new MasterEntity_v1_17_R1(nmsWorld);
@@ -28,27 +29,7 @@ public class MasterEntity_v1_17_R1 extends AIEntity {
     }
 
     @Override
-    protected void initPathfinder() {
-
-    }
-
-    protected SoundEffect getSoundAmbient() {
-        return null;
-    }
-
-    protected SoundEffect getSoundHurt(DamageSource damagesource) {
-        return SoundEffects.ot;
-    }
-
-    protected SoundEffect getSoundDeath() {
-        return SoundEffects.os;
-    }
-
-    protected SoundEffect getSoundStep() {
-        return null;
-    }
-
-    protected void b(BlockPosition blockposition, IBlockData iblockdata) {
-
+    public int getNoDamageTicks() {
+        return this.getBukkitEntity().getHandle().W;
     }
 }

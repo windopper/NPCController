@@ -95,5 +95,9 @@ public class BehaviorContainer {
         this.npcManager.putMemoryModule(new MemoryModule<>(importance, "WalkToDestination", target));
     }
 
+    public void eraseDestinationMemory() {
+        this.npcManager.removeMemoryModule("WalkToDestination");
+    }
+
 
 }

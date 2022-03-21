@@ -8,7 +8,9 @@ import com.kamilereon.npccontroller.memory.MemoryType;
 import com.kamilereon.npccontroller.utils.WorldUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -27,14 +29,15 @@ public class SelectTarget extends Behavior {
         if(npcManager.getMemoryModuleIfPresent("target") != null) {
             MemoryModule<?> module = npcManager.getMemoryModuleIfPresent("target");
             Entity t = (Entity) module.getData();
-            if(npcManager.distanceTo(t.getLocation()) >= 20) {
+            if(npcManager.distanceTo(t.getLocation()) >= 20 || t.isDead() ) {
                 npcManager.removeMemoryModule("target");
+                return false;
             }
-            return false;
         }
 
         List<Entity> list = WorldUtils.getEntitiesByPredicate(npcManager.getLocation(), 10, (e) -> {
-            if(e == npcManager.getAI()) return false;
+            if(e.getLocation().distance(npcManager.getLocation()) < 1) return false;
+            if(e instanceof Arrow) return false;
             return true;
         });
         this.target = npcManager.getRandomOne(list);
